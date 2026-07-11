@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +16,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import in.shubhamprakash681.auth_service.repositories.RevokedTokenRepository;
 import in.shubhamprakash681.common_lib.security.JwtPrincipal;
@@ -42,14 +48,16 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
-            JwtTokenService jwtTokenService,
-            RevokedTokenRepository revokedTokenRepository) throws Exception {
+                                            JwtTokenService jwtTokenService,
+                                            RevokedTokenRepository revokedTokenRepository) throws Exception {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenService, revokedTokenRepository);
 
         return http
+                .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/health")
                         .permitAll()
                         .anyRequest().authenticated())
@@ -58,19 +66,33 @@ public class SecurityConfig {
 
     }
 
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Location"));
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
     private static class JwtAuthenticationFilter extends OncePerRequestFilter {
         private final JwtTokenService jwtTokenService;
         private final RevokedTokenRepository revokedTokenRepository;
 
         private JwtAuthenticationFilter(JwtTokenService jwtTokenService,
-                RevokedTokenRepository revokedTokenRepository) {
+                                        RevokedTokenRepository revokedTokenRepository) {
             this.jwtTokenService = jwtTokenService;
             this.revokedTokenRepository = revokedTokenRepository;
         }
 
         @Override
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                FilterChain filterChain) throws ServletException, IOException {
+                                        FilterChain filterChain) throws ServletException, IOException {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
             if (header != null && header.startsWith("Bearer")) {
