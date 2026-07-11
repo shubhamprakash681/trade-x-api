@@ -1,0 +1,14 @@
+server:
+  port: ${AUTH_SERVICE_PORT}
+
+spring:
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5431}/${POSTGRES_DB:tradex_db}}
+    username: ${AUTH_DB_USERNAME:${POSTGRES_USER}}
+    password: ${AUTH_DB_PASSWORD:${POSTGRES_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect

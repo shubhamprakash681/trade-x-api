@@ -1,0 +1,97 @@
+version: "3.8"
+
+services:
+  rabbitmq:
+    container_name: tradex_configserver_rabbitmq
+    image: rabbitmq:4-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - myapp_network
+    volumes:
+      - config_rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  postgres_container:
+    image: postgres:latest
+    container_name: postgres_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5431:5432"
+    networks:
+      - myapp_network
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  pgadmin_container:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_container
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres_container:
+        condition: service_healthy
+    networks:
+      - myapp_network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+  # keycloak_container:
+  #   image: quay.io/keycloak/keycloak:25.0
+  #   container_name: keycloak_container
+  #   restart: unless-stopped
+  #   command: start # production mode; use 'start-dev' temporarily if debugging
+  #   environment:
+  #     KC_DB: postgres
+  #     KC_DB_URL_HOST: postgres_container
+  #     KC_DB_URL_PORT: 5432
+  #     KC_DB_URL_DATABASE: ${KC_DB_URL_DATABASE}
+  #     KC_DB_USERNAME: ${POSTGRES_USER}
+  #     KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+  #     KC_DB_SCHEMA: public
+
+  #     KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+  #     KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+  #     KC_HTTP_ENABLED: "true"
+  #     KC_HOSTNAME_STRICT: "false"
+  #     KC_HOSTNAME_STRICT_HTTPS: "false" # helpful in local/dev
+  #     KC_LOG_LEVEL: info # ↑ increase to 'debug' if needed
+
+  #   ports:
+  #     - "8180:8080"
+  #   depends_on:
+  #     postgres_container:
+  #       condition: service_healthy
+  #   networks:
+  #     - myapp_network
+
+networks:
+  myapp_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: tradex_postgres_volume
+  pgadmin_data:
+    name: tradex_pgadmin_volume
+  config_rabbitmq_data:
+    name: tradex_config_rabbitmq_volume

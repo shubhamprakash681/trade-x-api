@@ -1,0 +1,14 @@
+server:
+  port: ${MARKET_SERVICE_PORT}
+
+spring:
+  datasource:
+    url: ${MARKET_DB_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5431}/${POSTGRES_DB:tradex_db}}
+    username: ${MARKET_DB_USERNAME:${POSTGRES_USER}}
+    password: ${MARKET_DB_PASSWORD:${POSTGRES_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
