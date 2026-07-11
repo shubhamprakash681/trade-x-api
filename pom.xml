@@ -18,6 +18,7 @@
         <module>common-lib</module>
         <module>auth-service</module>
         <module>api-gateway</module>
+        <module>market-service</module>
     </modules>
 
     <properties>

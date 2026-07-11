@@ -24,4 +24,4 @@ springdoc:
 
 
 test:
-  my-name: api-default
+  my-name: api-uat
