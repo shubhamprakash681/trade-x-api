@@ -17,6 +17,7 @@
         <module>discovery-server</module>
         <module>common-lib</module>
         <module>auth-service</module>
+        <module>api-gateway</module>
     </modules>
 
     <properties>
