@@ -30,7 +30,8 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             "/webjars/swagger-ui", // for swagger-ui resources
             "/v3/api-docs", // for swagger-config and grouped api-docs
             "/auth/v3/api-docs",
-            "/market/v3/api-docs");
+            "/market/v3/api-docs",
+            "/portfolio/v3/api-docs");
 
     private final JwtTokenService jwtTokenService;
 

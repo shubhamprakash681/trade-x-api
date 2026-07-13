@@ -23,7 +23,8 @@ public class GatewayConfig {
     @Bean
     RouteLocator tradexRoutes(RouteLocatorBuilder builder,
                               @Value("${tradex.services.auth:lb://auth-service}") String authServiceUrl,
-                              @Value("${tradex.services.market:lb://market-service}") String marketServiceUrl
+                              @Value("${tradex.services.market:lb://market-service}") String marketServiceUrl,
+                              @Value("${tradex.services.portfolio:lb://portfolio-service}") String portfolioServiceUrl
     ) {
         return builder.routes()
                 .route("auth-api", route -> route
@@ -32,6 +33,9 @@ public class GatewayConfig {
                 .route("stock-api", route -> route
                         .path("/api/stocks/**")
                         .uri(marketServiceUrl))
+                .route("portfolio-api", route -> route
+                        .path("/portfolio/**", "/orders/**", "/transactions/**")
+                        .uri(portfolioServiceUrl))
                 .route("auth-openapi", route -> route
                         .path("/auth/v3/api-docs")
                         .filters(filter -> filter.rewritePath("/auth/v3/api-docs", "/v3/api-docs"))
@@ -40,6 +44,10 @@ public class GatewayConfig {
                         .path("/market/v3/api-docs")
                         .filters(filter -> filter.rewritePath("/market/v3/api-docs", "/v3/api-docs"))
                         .uri(marketServiceUrl))
+                .route("portfolio-openapi", route -> route
+                        .path("/portfolio/v3/api-docs")
+                        .filters(filter -> filter.rewritePath("/portfolio/v3/api-docs", "/v3/api-docs"))
+                        .uri(portfolioServiceUrl))
                 .build();
     }
 

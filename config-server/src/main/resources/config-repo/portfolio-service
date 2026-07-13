@@ -1,0 +1,20 @@
+server:
+  port: ${PORTFOLIO_SERVICE_PORT}
+
+spring:
+  datasource:
+    url: ${PORTFOLIO_DB_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5431}/${POSTGRES_DB:tradex_db}}
+    username: ${PORTFOLIO_DB_USERNAME:${POSTGRES_USER}}
+    password: ${PORTFOLIO_DB_PASSWORD:${POSTGRES_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+tradex:
+  trading:
+    starting-cash: ${TRADEX_STARTING_CASH:1000000.00}
+  services:
+    market-url: ${MARKET_SERVICE_URL:http://localhost:8082}

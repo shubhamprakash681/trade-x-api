@@ -5,6 +5,7 @@ tradex:
   services:
     auth: lb://auth-service
     market: lb://market-service
+    portfolio: lb://portfolio-service
 
 spring:
   cloud:
@@ -21,6 +22,8 @@ springdoc:
         url: /auth/v3/api-docs
       - name: Market Service
         url: /market/v3/api-docs
+      - name: Portfolio Service
+        url: /portfolio/v3/api-docs
 
 
 test:
