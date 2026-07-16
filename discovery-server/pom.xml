@@ -8,7 +8,7 @@
 		<groupId>in.shubhamprakash681</groupId>
 		<artifactId>trade-x</artifactId>
 		<version>1.0-SNAPSHOT</version>
-		<relativePath /> <!-- lookup parent from repository -->
+		<relativePath>../pom.xml</relativePath>
 	</parent>
 
 	<artifactId>discovery-server</artifactId>
