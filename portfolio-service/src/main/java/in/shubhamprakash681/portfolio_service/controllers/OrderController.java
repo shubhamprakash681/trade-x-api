@@ -5,7 +5,6 @@ import in.shubhamprakash681.portfolio_service.dtos.OrderDtos;
 import in.shubhamprakash681.portfolio_service.services.PortfolioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,16 +18,14 @@ public class OrderController {
 
     @PostMapping("/buy")
     OrderDtos.OrderResponse buy(@AuthenticationPrincipal JwtPrincipal principal,
-                                @Valid @RequestBody OrderDtos.OrderRequest request,
-                                @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
-        return portfolioService.buy(principal, request, authorization);
+                                @Valid @RequestBody OrderDtos.OrderRequest request) {
+        return portfolioService.buy(principal, request);
     }
 
     @PostMapping("/sell")
     OrderDtos.OrderResponse sell(@AuthenticationPrincipal JwtPrincipal principal,
-                                 @Valid @RequestBody OrderDtos.OrderRequest request,
-                                 @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
-        return portfolioService.sell(principal, request, authorization);
+                                 @Valid @RequestBody OrderDtos.OrderRequest request) {
+        return portfolioService.sell(principal, request);
     }
 
     @GetMapping("/history")

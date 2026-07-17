@@ -16,5 +16,3 @@ spring:
 tradex:
   trading:
     starting-cash: ${TRADEX_STARTING_CASH:1000000.00}
-  services:
-    market-url: ${MARKET_SERVICE_URL:http://localhost:8082}

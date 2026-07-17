@@ -8,5 +8,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "market-service")
 public interface MarketClient {
     @GetMapping("/api/stocks/{symbol}")
-    StockResponse getStock(@PathVariable String symbol);
+    StockResponse getStock(@PathVariable("symbol") String symbol);
 }
