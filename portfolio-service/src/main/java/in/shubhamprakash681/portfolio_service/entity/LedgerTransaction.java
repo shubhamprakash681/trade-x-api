@@ -2,8 +2,11 @@ package in.shubhamprakash681.portfolio_service.entity;
 
 import in.shubhamprakash681.portfolio_service.enums.OrderSide;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -14,6 +17,8 @@ import java.time.LocalDateTime;
 @Table(name = "ledger_transactions")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LedgerTransaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

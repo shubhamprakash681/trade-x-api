@@ -12,8 +12,8 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Entity
-@Data
 @Table(name = "stocks_table")
+@Data
 @Builder
 @AllArgsConstructor
 public class Stock {

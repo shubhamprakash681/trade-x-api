@@ -88,7 +88,7 @@ public class AuthService {
 
     // Helper functions
     private AuthResponse tokensFor(User user) {
-        Set<String> roles = Set.copyOf(user.getRoles().stream().sorted().map(x -> x.toString()).toList());
+        Set<String> roles = Set.copyOf(user.getRoles().stream().sorted().map(Enum::toString).toList());
 
         return new AuthResponse(
                 jwtTokenService.createAccessToken(user.getId(), user.getEmail(), roles),

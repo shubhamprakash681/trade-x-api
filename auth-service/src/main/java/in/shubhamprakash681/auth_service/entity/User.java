@@ -3,6 +3,8 @@ package in.shubhamprakash681.auth_service.entity;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -23,6 +25,8 @@ import lombok.Data;
 @Table(name = "users_table")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

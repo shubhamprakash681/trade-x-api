@@ -1,0 +1,1 @@
+/logout throwing 403 Forbidden even with proper access token
