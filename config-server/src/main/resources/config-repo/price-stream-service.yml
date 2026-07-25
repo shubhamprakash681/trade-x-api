@@ -1,0 +1,44 @@
+server:
+  port: ${PRICE_STREAM_SERVICE_PORT:8084}
+
+spring:
+  datasource:
+    url: ${PRICE_STREAM_DB_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5431}/${POSTGRES_DB:tradex_db}}
+    username: ${PRICE_STREAM_DB_USERNAME:${POSTGRES_USER}}
+    password: ${PRICE_STREAM_DB_PASSWORD:${POSTGRES_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: price-stream-service
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: in.shubhamprakash681.price_stream_service.dtos
+        spring.json.value.default.type: in.shubhamprakash681.price_stream_service.dtos.PriceTick
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+tradex:
+  prices:
+    topic: ${TRADEX_PRICE_TOPIC:tradex.market.prices}
+    generation-interval-ms: ${TRADEX_PRICE_GENERATION_INTERVAL_MS:2000}
+    history-limit: ${TRADEX_PRICE_HISTORY_LIMIT:500}
+    symbols: ${TRADEX_PRICE_SYMBOLS:NIFTYBEES,SNIFTYBEES,BANKBEES,HDFCBANK,RELIANCE,TCS,INFY,SBIN,ITC,SUNPHARMA}
+
+springdoc:
+  packages-to-scan: in.shubhamprakash681.price_stream_service.controllers

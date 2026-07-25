@@ -6,6 +6,8 @@ tradex:
     auth: lb://auth-service
     market: lb://market-service
     portfolio: lb://portfolio-service
+    price-stream: lb://price-stream-service
+    price-stream-ws: lb:ws://price-stream-service
 
 spring:
   cloud:
@@ -24,7 +26,5 @@ springdoc:
         url: /market/v3/api-docs
       - name: Portfolio Service
         url: /portfolio/v3/api-docs
-
-
-test:
-  my-name: api-default
+      - name: Price Stream Service
+        url: /prices/v3/api-docs

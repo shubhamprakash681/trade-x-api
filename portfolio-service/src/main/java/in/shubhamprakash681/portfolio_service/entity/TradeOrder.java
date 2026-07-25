@@ -57,6 +57,7 @@ public class TradeOrder {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)
+    @Builder.Default
     private OrderStatus status = OrderStatus.EXECUTED;
 
     @CreationTimestamp

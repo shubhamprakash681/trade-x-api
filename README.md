@@ -156,6 +156,14 @@ This repository is now scaffolded as a Maven multi-module Spring Boot microservi
 - Holdings track quantity, average price, market value, and unrealized P/L.
 - Order history and transaction history are stored per authenticated user.
 
+## Completed: Milestone 3 – Real-Time Streaming
+
+- `price-stream-service` – synthetic price generation, Kafka event streaming, Redis latest-price caching, WebSocket broadcasting, and price history service running on port `8084`.
+- Synthetic price ticks are generated for the seeded stock catalog and published to Kafka topic `tradex.market.prices`.
+- Consumed price events are cached in Redis, persisted in PostgreSQL, and broadcast over STOMP WebSocket topics.
+- WebSocket endpoint: `ws://localhost:8080/ws`.
+- Broadcast topics: `/topic/market` for all ticks and `/topic/{symbol}` for individual stock ticks.
+
 ## Milestone 1 APIs
 
 Gateway base URL: `http://localhost:8080`
@@ -178,13 +186,20 @@ Stock APIs:
 
 Paper trading APIs:
 
-- `GET /portfolio`
-- `GET /portfolio/summary`
-- `GET /portfolio/holdings`
-- `POST /orders/buy`
-- `POST /orders/sell`
-- `GET /orders/history`
-- `GET /transactions`
+- `GET /api/portfolio`
+- `GET /api/portfolio/summary`
+- `GET /api/portfolio/holdings`
+- `POST /api/orders/buy`
+- `POST /api/orders/sell`
+- `GET /api/orders/history`
+- `GET /api/transactions`
+
+Price streaming APIs:
+
+- `GET /api/prices/latest`
+- `GET /api/prices/{symbol}`
+- `GET /api/prices/history`
+- `GET /api/prices/history?symbol=NIFTYBEES&limit=100`
 
 ## API Documentation
 
@@ -194,15 +209,16 @@ Swagger UI is enabled from the first milestone:
 - Auth service OpenAPI: `http://localhost:8080/auth/v3/api-docs`
 - Market service OpenAPI: `http://localhost:8080/market/v3/api-docs`
 - Portfolio service OpenAPI: `http://localhost:8080/portfolio/v3/api-docs`
+- Price stream service OpenAPI: `http://localhost:8080/prices/v3/api-docs`
 - Eureka dashboard: `http://localhost:8761`
 - Config Server example: `http://localhost:8888/api-gateway/default`
 
 ## Local Run Commands
 
-Start PostgreSQL first. The Spring services read database settings from the Config Server, which resolves them from `.env`.
+Start PostgreSQL, Redis, and Kafka first. The Spring services read database, Redis, Kafka, and JWT settings from the Config Server, which resolves them from `.env`.
 
 ```bash
-docker compose up -d postgres_container pgadmin_container
+docker compose up -d postgres_container pgadmin_container redis_container kafka_container
 ```
 
 Use the same `TRADEX_JWT_SECRET` value for all services. For local runs, `POSTGRES_HOST=localhost` and `POSTGRES_PORT=5431` match the Compose port mapping.
@@ -216,6 +232,7 @@ mvn -pl discovery-server spring-boot:run
 mvn -pl auth-service spring-boot:run
 mvn -pl market-service spring-boot:run
 mvn -pl portfolio-service spring-boot:run
+mvn -pl price-stream-service spring-boot:run
 mvn -pl api-gateway spring-boot:run
 ```
 
