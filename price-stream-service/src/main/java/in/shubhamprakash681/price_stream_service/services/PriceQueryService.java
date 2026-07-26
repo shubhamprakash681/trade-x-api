@@ -6,6 +6,7 @@ import in.shubhamprakash681.price_stream_service.dtos.PriceResponse;
 import in.shubhamprakash681.price_stream_service.dtos.PriceTick;
 import in.shubhamprakash681.price_stream_service.entity.PriceHistory;
 import in.shubhamprakash681.price_stream_service.repositories.PriceHistoryRepository;
+import in.shubhamprakash681.common_lib.stock.Helper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -94,7 +95,7 @@ public class PriceQueryService {
                 basePrice,
                 BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
                 BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP),
-                seedPriceCatalog.isSynthetic(symbol),
+                Helper.isSymbolSyntheticStock(symbol),
                 LocalDateTime.now());
     }
 

@@ -20,7 +20,7 @@ public class StockDataSeeder {
             }
             stockRepository.saveAll(List.of(
                     stock("NIFTYBEES", "Nippon India ETF Nifty 50 BeES", "NSE", "ETF", "275.50", false),
-                    stock("SNIFTYBEES", "Synthetic Nifty 50 BeES", "TRADEX", "Synthetic ETF", "275.50", true),
+                    stock("SYNTH_NIFTYBEES", "Synthetic Nifty 50 BeES", "TRADEX", "Synthetic ETF", "275.50", true),
                     stock("BANKBEES", "Nippon India ETF Bank BeES", "NSE", "ETF", "515.25", false),
                     stock("HDFCBANK", "HDFC Bank Limited", "NSE", "Banking", "1695.40", false),
                     stock("RELIANCE", "Reliance Industries Limited", "NSE", "Energy", "2940.10", false),

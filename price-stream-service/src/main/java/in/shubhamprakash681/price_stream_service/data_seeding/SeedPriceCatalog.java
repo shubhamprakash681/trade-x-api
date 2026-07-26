@@ -9,7 +9,7 @@ import java.util.Map;
 public class SeedPriceCatalog {
     private final Map<String, BigDecimal> basePrice = Map.of(
             "NIFTYBEES", new BigDecimal("275.50"),
-            "SNIFTYBEES", new BigDecimal("275.50"),
+            "SYNTH_NIFTYBEES", new BigDecimal("275.50"),
             "BANKBEES", new BigDecimal("515.25"),
             "HDFCBANK", new BigDecimal("1695.40"),
             "RELIANCE", new BigDecimal("2940.10"),
@@ -22,9 +22,5 @@ public class SeedPriceCatalog {
 
     public BigDecimal basePrice(String symbol) {
         return basePrice.getOrDefault(symbol, new BigDecimal("100.00"));
-    }
-
-    public boolean isSynthetic(String symbol) {
-        return symbol.startsWith("S");
     }
 }

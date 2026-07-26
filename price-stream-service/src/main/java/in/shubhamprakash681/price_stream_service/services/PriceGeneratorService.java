@@ -1,5 +1,6 @@
 package in.shubhamprakash681.price_stream_service.services;
 
+import in.shubhamprakash681.common_lib.stock.Helper;
 import in.shubhamprakash681.price_stream_service.config.PriceStreamProperties;
 import in.shubhamprakash681.price_stream_service.data_seeding.SeedPriceCatalog;
 import in.shubhamprakash681.price_stream_service.dtos.PriceTick;
@@ -57,7 +58,7 @@ public class PriceGeneratorService {
                 previousPrice,
                 price.subtract(previousPrice).setScale(4, RoundingMode.HALF_UP),
                 price.subtract(previousPrice).multiply(ONE_HUNDRED).divide(previousPrice, 4, RoundingMode.HALF_UP),
-                seedPriceCatalog.isSynthetic(symbol),
+                Helper.isSymbolSyntheticStock(symbol),
                 LocalDateTime.now()
         );
     }

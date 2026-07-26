@@ -12,6 +12,23 @@ spring:
       ddl-auto: update
     open-in-view: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+tradex:
+  market:
+    topic: ${TRADEX_PRICE_TOPIC:tradex.market.prices}
+    integration:
+      enabled: ${TRADEX_EXTERNAL_MARKET_ENABLED:false}
+      base-url: ${TRADEX_EXTERNAL_MARKET_BASE_URL:}
+      api-key: ${TRADEX_EXTERNAL_MARKET_API_KEY:}
+      refresh-interval-ms: ${TRADEX_EXTERNAL_MARKET_REFRESH_INTERVAL_MS:30000}
+      publish-on-request: ${TRADEX_EXTERNAL_MARKET_PUBLISH_ON_REQUEST:true}
 
 springdoc:
   packages-to-scan: in.shubhamprakash681.market_service.controllers

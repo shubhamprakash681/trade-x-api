@@ -13,7 +13,7 @@ public class PriceStreamProperties {
     private int historyLimit = 500;
     private List<String> symbols = List.of(
             "NIFTYBEES",
-            "SNIFTYBEES",
+            "SYNTH_NIFTYBEES",
             "BANKBEES",
             "HDFCBANK",
             "RELIANCE",
