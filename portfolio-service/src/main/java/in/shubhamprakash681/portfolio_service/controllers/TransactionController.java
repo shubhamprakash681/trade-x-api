@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/transactions")
+@RequestMapping({"/transactions", "/api/transactions"})
 @RequiredArgsConstructor
 public class TransactionController {
     private final PortfolioService portfolioService;
