@@ -2,7 +2,7 @@ package in.shubhamprakash681.api_gateway;
 
 
 import in.shubhamprakash681.common_lib.security.JwtTokenService;
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class JwtGatewayFilter implements GlobalFilter, Ordered {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/signup",
@@ -34,9 +33,14 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             "/market/v3/api-docs",
             "/portfolio/v3/api-docs",
             "/prices/v3/api-docs",
+            "/notifications/v3/api-docs",
             "/ws");
 
     private final JwtTokenService jwtTokenService;
+
+    public JwtGatewayFilter(JwtTokenService jwtTokenService) {
+        this.jwtTokenService = jwtTokenService;
+    }
 
     private boolean isPublic(String path) {
         return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
@@ -54,7 +58,7 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
+    public Mono<Void> filter(@NotNull ServerWebExchange exchange, @NonNull GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
         if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS || isPublic(path)) return chain.filter(exchange);
 

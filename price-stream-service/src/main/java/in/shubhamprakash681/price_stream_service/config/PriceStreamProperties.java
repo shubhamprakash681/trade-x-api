@@ -12,14 +12,19 @@ public class PriceStreamProperties {
     private long generationIntervalMs = 2000;
     private int historyLimit = 500;
     private List<String> symbols = List.of(
-            "NIFTYBEES",
-            "SYNTH_NIFTYBEES",
-            "BANKBEES",
-            "HDFCBANK",
             "RELIANCE",
             "TCS",
             "INFY",
+            "HDFCBANK",
+            "ICICIBANK",
             "SBIN",
             "ITC",
-            "SUNPHARMA");
+            "LT",
+            "AXISBANK",
+            "BHARTIARTL",
+            "MARUTI",
+            "TITAN",
+            "ASIANPAINT",
+            "NIFTYBEES",
+            "BANKBEES");
 }

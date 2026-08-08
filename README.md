@@ -1,54 +1,190 @@
 # TradeX – Real-Time Paper Trading Platform
 
-## Project Description
+## Project Overview
 
-TradeX is a production-inspired full-stack paper trading platform built using **Java (Spring Boot)** and **React**. It is designed as a showcase application that mimics the user experience of modern investment platforms such as Groww and INDmoney without executing any real financial transactions.
+TradeX is a production-inspired full-stack paper trading platform built using **Java (Spring Boot)** and **React**. The application simulates a modern stock trading platform similar to Groww or INDmoney without performing any real financial transactions.
 
-The application allows users to register, manage a virtual portfolio, buy and sell stocks using virtual currency, create watchlists, and visualize live market data through interactive charts. It integrates with third-party market data APIs for selected real instruments (such as NIFTYBEES) while also generating synthetic market data (for example, **SNIFTYBEES**) using Kafka-based event streaming. This demonstrates both external data integration and event-driven architecture.
+Unlike traditional demo trading applications, TradeX is **completely self-contained** and does not rely on any third-party market data providers. Instead, it contains its own market simulation engine capable of generating realistic historical and live stock market data.
 
-The project is intended to follow production-grade software engineering practices, including modular architecture, RESTful APIs, JWT authentication, WebSockets, Redis caching, Kafka messaging, Docker-based deployment, automated testing, and observability.
+This approach ensures that the project remains fully reproducible, works completely offline after setup, and is not affected by API limits, pricing changes, or external service outages.
 
-## Project Objectives
-
-- Build a scalable fintech-style web application.
-- Demonstrate microservice-ready architecture using Spring Boot.
-- Implement secure authentication and authorization.
-- Simulate paper trading with virtual money.
-- Stream real-time market prices using Kafka and WebSockets.
-- Integrate external stock market APIs.
-- Showcase modern frontend development with React and TypeScript.
-- Apply production engineering practices such as Docker, CI/CD, monitoring, testing, and documentation.
-
-## Scope
-
-### Included
-- User authentication
-- Stock search
-- Portfolio management
-- Paper trading
-- Watchlist
-- Real-time charts
-- Kafka-based synthetic price generation
-- Real market data integration
-- Notifications and price alerts
-- Responsive web UI
-
-### Excluded
-- Real brokerage integration
-- Real money transactions
-- KYC
-- Payment gateway
-- Banking integrations
+The application demonstrates modern backend architecture using Spring Boot, Kafka, Redis, PostgreSQL, WebSockets, Docker, and React while showcasing concepts commonly used in production fintech systems.
 
 ---
 
-# Milestone-wise Requirements
+# Project Objectives
 
-## Milestone 1 – Foundation
-### Objective
+- Build a production-grade paper trading platform.
+- Demonstrate event-driven architecture using Kafka.
+- Simulate realistic stock market behaviour.
+- Implement secure authentication using JWT.
+- Visualize live stock prices using WebSockets.
+- Manage portfolios, watchlists, and virtual trading.
+- Follow production engineering best practices.
+
+---
+
+# Project Scope
+
+## Included
+
+- User authentication
+- Virtual trading
+- Portfolio management
+- Transaction history
+- Watchlists
+- Price alerts
+- Real-time market streaming
+- Historical stock charts
+- Kafka event streaming
+- Redis caching
+- Responsive React frontend
+
+## Excluded
+
+- Real brokerage integration
+- Real money transactions
+- KYC
+- Banking integration
+- Payment gateway
+- Third-party market data APIs
+
+---
+
+# Market Simulation Engine
+
+One of the primary goals of TradeX is to remain completely independent of external market data providers.
+
+Instead of consuming live stock prices from third-party APIs, the application generates and maintains its own market data.
+
+The simulation consists of three major components.
+
+## 1. Historical Data Seeder
+
+During application startup, the Market Service verifies that historical data exists for every supported stock and ETF.
+
+If any historical data is missing, a background seeding process generates realistic historical market data before the Market Service becomes available.
+
+Characteristics
+
+- Generates approximately 10 years of daily OHLCV candles
+- Generates data for approximately 15 Indian stocks and ETFs
+- Uses deterministic random seeds so generated data remains consistent
+- Produces realistic long-term bullish and bearish trends
+- Simulates market crashes and recoveries
+- Generates realistic daily trading volumes
+
+Example symbols
+
+- RELIANCE
+- TCS
+- INFY
+- HDFCBANK
+- ICICIBANK
+- SBIN
+- ITC
+- LT
+- AXISBANK
+- BHARTIARTL
+- MARUTI
+- TITAN
+- ASIANPAINT
+- NIFTYBEES
+- BANKBEES
+
+---
+
+## 2. Startup Validation
+
+Every time the Market Service starts:
+
+1. Check every supported symbol.
+2. Verify that historical data exists from the configured start date until today.
+3. Generate only the missing dates.
+4. Store generated candles in PostgreSQL.
+5. Start the REST APIs only after validation completes.
+
+This guarantees that the database is always complete and consistent.
+
+---
+
+## 3. Live Market Simulator
+
+After startup, a Market Simulator continuously generates live market ticks based on the latest available historical candle.
+
+The simulator uses stochastic price movement algorithms such as:
+
+- Random Walk
+- Geometric Brownian Motion
+- Mean Reversion
+- Volume Simulation
+
+Generated market events are published to Kafka.
+
+Example event
+
+```json
+{
+  "symbol": "NIFTYBEES",
+  "price": 284.72,
+  "volume": 1245,
+  "timestamp": 1785307200
+}
+```
+
+These events are consumed by the WebSocket service and streamed to connected clients in real time.
+
+---
+
+# Technology Stack
+
+## Backend
+
+- Java 21
+- Spring Boot 3
+- Spring Security
+- JWT Authentication
+- Spring Data JPA
+- PostgreSQL
+- Kafka
+- Redis
+- WebSockets
+- Flyway
+- Maven
+
+## Frontend
+
+- React
+- TypeScript
+- Redux Toolkit
+- React Query
+- React Router
+- Tailwind CSS
+- TradingView Lightweight Charts
+
+## Infrastructure
+
+- Docker
+- Docker Compose
+
+---
+
+# Milestone 1 – Foundation
+
+## Objective
+
 Build authentication, user management, and stock catalog.
 
-### APIs
+### Features
+
+- User registration
+- Login
+- JWT authentication
+- Refresh tokens
+- Profile management
+- Seed supported stock master
+
+### REST APIs
 - POST /api/auth/signup
 - POST /api/auth/login
 - POST /api/auth/refresh
@@ -58,13 +194,46 @@ Build authentication, user management, and stock catalog.
 - PUT /api/users/password
 - GET /api/stocks
 - GET /api/stocks/{symbol}
-- GET /api/stocks/search?q=
+- GET /api/stocks/search
 
-## Milestone 2 – Paper Trading
-### Objective
-Implement virtual trading and portfolio management.
+---
 
-### APIs
+# Milestone 2 – Historical Market Generation
+
+## Objective
+
+Create a deterministic market data generation engine.
+
+### Features
+- Generate 10 years of historical data
+- Generate OHLCV candles
+- Generate realistic market trends
+- Startup validation
+- Automatic regeneration of missing dates
+
+### REST APIs
+- GET /api/market/history/{symbol}
+- GET /api/market/candle/{symbol}
+- POST /api/admin/market/regenerate
+- GET /api/admin/market/status
+
+---
+
+# Milestone 3 – Paper Trading
+
+## Objective
+
+Implement portfolio management and paper trading.
+
+### Features
+- ₹10,00,000 virtual balance
+- Buy stocks
+- Sell stocks
+- Portfolio summary
+- Holdings
+- Transaction history
+
+### REST APIs
 - GET /portfolio
 - GET /portfolio/summary
 - GET /portfolio/holdings
@@ -73,35 +242,50 @@ Implement virtual trading and portfolio management.
 - GET /orders/history
 - GET /transactions
 
-## Milestone 3 – Real-Time Streaming
-### Objective
-Introduce Kafka, Redis, and WebSocket streaming.
+---
 
-### APIs
+# Milestone 4 – Live Market Streaming
+
+## Objective
+
+Generate live simulated market prices.
+
+### Features
+
+- Kafka Producer
+- Kafka Consumer
+- Redis Cache
+- Live Tick Generator
+- WebSocket Streaming
+
+### REST APIs
 - GET /prices/latest
 - GET /prices/{symbol}
 - GET /prices/history
 
-### WebSocket Topics
+### WebSocket
+
 - /ws
 - /topic/market
 - /topic/{symbol}
 
-## Milestone 4 – External Market Integration
-### Objective
-Consume third-party market APIs and publish prices to Kafka.
+---
 
-### APIs
-- GET /market/indices
-- GET /market/gainers
-- GET /market/losers
-- GET /market/trending
+# Milestone 5 – Advanced Features
 
-## Milestone 5 – Advanced Product Features
-### Objective
-Implement watchlists, alerts, notifications, and caching.
+## Features
 
-### APIs
+- Watchlists
+- Price alerts
+- Notifications
+- Redis caching
+- Dashboard
+- Top gainers
+- Top losers
+- Trending stocks (derived from simulated market)
+
+### REST APIs
+
 - GET /watchlist
 - POST /watchlist
 - DELETE /watchlist/{symbol}
@@ -109,24 +293,37 @@ Implement watchlists, alerts, notifications, and caching.
 - GET /alerts
 - DELETE /alerts
 - GET /notifications
+- GET /market/gainers
+- GET /market/losers
+- GET /market/trending
 
-## Milestone 6 – Production Readiness
-### Objective
-Prepare the application for production-style deployment.
+---
 
-Features include Docker, Prometheus, Grafana, OpenTelemetry, GitHub Actions, automated testing, and comprehensive documentation.
+# Milestone 6 – Production Readiness
 
-## Suggested Repository Structure
+## Features
 
-```text
+- Docker Compose
+- GitHub Actions
+- Prometheus
+- Grafana
+- OpenTelemetry
+- Integration Tests
+- Testcontainers
+- Comprehensive Documentation
+
+---
+
+# Suggested Repository Structure
+
+```
 tradex/
 ├── auth-service/
 ├── market-service/
 ├── portfolio-service/
 ├── order-service/
-├── price-stream-service/
-├── websocket-service/
 ├── notification-service/
+├── websocket-service/
 ├── common-lib/
 ├── frontend-react/
 ├── docker-compose.yml
@@ -135,109 +332,12 @@ tradex/
 
 ---
 
-# Implementation Status
+# Design Goals
 
-## Completed: Milestone 1 – Foundation
-
-This repository is now scaffolded as a Maven multi-module Spring Boot microservice system:
-
-- `common-lib` – shared JWT utilities, JWT properties, principal model, and API error shape.
-- `config-server` – centralized Spring Cloud Config Server running on port `8888`, backed by `config-server/src/main/resources/config-repo`.
-- `discovery-server` – Eureka service registry running on port `8761`.
-- `api-gateway` – Spring Cloud Gateway running on port `8080`, with Java-based routes and a Java `GlobalFilter` that validates JWTs before forwarding protected `/api/**` traffic.
-- `auth-service` – authentication and user profile service running on port `8081`.
-- `market-service` – stock catalog/search service running on port `8082`.
-
-## Completed: Milestone 2 – Paper Trading
-
-- `portfolio-service` – virtual portfolio, holdings, paper buy/sell orders, and transaction ledger service running on port `8083`.
-- Users receive a virtual cash account on first portfolio access.
-- Buy and sell orders are executed immediately using the current `market-service` stock `referencePrice`.
-- Holdings track quantity, average price, market value, and unrealized P/L.
-- Order history and transaction history are stored per authenticated user.
-
-## Completed: Milestone 3 – Real-Time Streaming
-
-- `price-stream-service` – synthetic price generation, Kafka event streaming, Redis latest-price caching, WebSocket broadcasting, and price history service running on port `8084`.
-- Synthetic price ticks are generated for the seeded stock catalog and published to Kafka topic `tradex.market.prices`.
-- Consumed price events are cached in Redis, persisted in PostgreSQL, and broadcast over STOMP WebSocket topics.
-- WebSocket endpoint: `ws://localhost:8080/ws`.
-- Broadcast topics: `/topic/market` for all ticks and `/topic/{symbol}` for individual stock ticks.
-
-## Milestone 1 APIs
-
-Gateway base URL: `http://localhost:8080`
-
-Auth and user APIs:
-
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/users/me`
-- `PUT /api/users/me`
-- `PUT /api/users/password`
-
-Stock APIs:
-
-- `GET /api/stocks`
-- `GET /api/stocks/{symbol}`
-- `GET /api/stocks/search?q=`
-
-Paper trading APIs:
-
-- `GET /api/portfolio`
-- `GET /api/portfolio/summary`
-- `GET /api/portfolio/holdings`
-- `POST /api/orders/buy`
-- `POST /api/orders/sell`
-- `GET /api/orders/history`
-- `GET /api/transactions`
-
-Price streaming APIs:
-
-- `GET /api/prices/latest`
-- `GET /api/prices/{symbol}`
-- `GET /api/prices/history`
-- `GET /api/prices/history?symbol=NIFTYBEES&limit=100`
-
-## API Documentation
-
-Swagger UI is enabled from the first milestone:
-
-- Gateway Swagger UI: `http://localhost:8080/swagger-ui.html`
-- Auth service OpenAPI: `http://localhost:8080/auth/v3/api-docs`
-- Market service OpenAPI: `http://localhost:8080/market/v3/api-docs`
-- Portfolio service OpenAPI: `http://localhost:8080/portfolio/v3/api-docs`
-- Price stream service OpenAPI: `http://localhost:8080/prices/v3/api-docs`
-- Eureka dashboard: `http://localhost:8761`
-- Config Server example: `http://localhost:8888/api-gateway/default`
-
-## Local Run Commands
-
-Start PostgreSQL, Redis, and Kafka first. The Spring services read database, Redis, Kafka, and JWT settings from the Config Server, which resolves them from `.env`.
-
-```bash
-docker compose up -d postgres_container pgadmin_container redis_container kafka_container
-```
-
-Use the same `TRADEX_JWT_SECRET` value for all services. For local runs, `POSTGRES_HOST=localhost` and `POSTGRES_PORT=5431` match the Compose port mapping.
-
-```bash
-set -a
-source .env
-set +a
-mvn -pl config-server spring-boot:run
-mvn -pl discovery-server spring-boot:run
-mvn -pl auth-service spring-boot:run
-mvn -pl market-service spring-boot:run
-mvn -pl portfolio-service spring-boot:run
-mvn -pl price-stream-service spring-boot:run
-mvn -pl api-gateway spring-boot:run
-```
-
-Run the full build:
-
-```bash
-mvn test
-```
+- Fully self-contained
+- No external API dependency
+- Deterministic market simulation
+- Event-driven architecture
+- Production-inspired codebase
+- Interview-ready system design
+- Easy local setup with Docker Compose

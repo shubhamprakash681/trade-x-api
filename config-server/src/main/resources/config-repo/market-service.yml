@@ -23,12 +23,9 @@ spring:
 tradex:
   market:
     topic: ${TRADEX_PRICE_TOPIC:tradex.market.prices}
-    integration:
-      enabled: ${TRADEX_EXTERNAL_MARKET_ENABLED:false}
-      base-url: ${TRADEX_EXTERNAL_MARKET_BASE_URL:}
-      api-key: ${TRADEX_EXTERNAL_MARKET_API_KEY:}
-      refresh-interval-ms: ${TRADEX_EXTERNAL_MARKET_REFRESH_INTERVAL_MS:30000}
-      publish-on-request: ${TRADEX_EXTERNAL_MARKET_PUBLISH_ON_REQUEST:true}
+    history:
+      years: ${TRADEX_MARKET_HISTORY_YEARS:10}
+      interval: ${TRADEX_MARKET_HISTORY_INTERVAL:DAILY}
 
 springdoc:
   packages-to-scan: in.shubhamprakash681.market_service.controllers

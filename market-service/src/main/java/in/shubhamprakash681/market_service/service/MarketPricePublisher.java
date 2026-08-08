@@ -1,7 +1,7 @@
 package in.shubhamprakash681.market_service.service;
 
 import in.shubhamprakash681.common_lib.stock.Helper;
-import in.shubhamprakash681.market_service.dtos.ExternalMarketDtos;
+import in.shubhamprakash681.market_service.dtos.MarketDtos;
 import in.shubhamprakash681.market_service.dtos.PriceTick;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -24,17 +24,12 @@ public class MarketPricePublisher {
         this.topic = topic;
     }
 
-    public void publishIndex(ExternalMarketDtos.MarketIndexResponse indexResponse) {
-        publish(indexResponse.symbol(), indexResponse.value(), indexResponse.changeAmount(),
-                indexResponse.changePercent(), indexResponse.asOf(), false);
-    }
-
-    public void publishMover(ExternalMarketDtos.MarketMoverResponse moverResponse) {
+    public void publishMover(MarketDtos.MarketMoverResponse moverResponse) {
         publish(moverResponse.symbol(), moverResponse.price(), moverResponse.changeAmount(),
                 moverResponse.changePercent(), moverResponse.asOf(), Helper.isSymbolSyntheticStock(moverResponse.symbol()));
     }
 
-    public void publishTrend(ExternalMarketDtos.MarketTrendResponse trendResponse) {
+    public void publishTrend(MarketDtos.MarketTrendResponse trendResponse) {
         BigDecimal changeAmount = trendResponse.price()
                 .multiply(trendResponse.changePercent())
                 .divide(ONE_HUNDRED, 4, RoundingMode.HALF_UP);

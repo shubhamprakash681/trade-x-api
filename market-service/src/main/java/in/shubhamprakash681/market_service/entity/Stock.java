@@ -5,17 +5,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "stocks_table")
-@Data
-@Builder
-@AllArgsConstructor
 public class Stock {
     @Id
     @Column(nullable = false, unique = true, length = 32)
@@ -39,4 +33,60 @@ public class Stock {
     protected Stock() {
     }
 
+    public Stock(String symbol, String name, String exchange, String sector, BigDecimal referencePrice, boolean synthetic) {
+        this.symbol = symbol;
+        this.name = name;
+        this.exchange = exchange;
+        this.sector = sector;
+        this.referencePrice = referencePrice;
+        this.synthetic = synthetic;
+    }
+
+    public String getSymbol() {
+        return symbol;
+    }
+
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getExchange() {
+        return exchange;
+    }
+
+    public void setExchange(String exchange) {
+        this.exchange = exchange;
+    }
+
+    public String getSector() {
+        return sector;
+    }
+
+    public void setSector(String sector) {
+        this.sector = sector;
+    }
+
+    public BigDecimal getReferencePrice() {
+        return referencePrice;
+    }
+
+    public void setReferencePrice(BigDecimal referencePrice) {
+        this.referencePrice = referencePrice;
+    }
+
+    public boolean isSynthetic() {
+        return synthetic;
+    }
+
+    public void setSynthetic(boolean synthetic) {
+        this.synthetic = synthetic;
+    }
 }

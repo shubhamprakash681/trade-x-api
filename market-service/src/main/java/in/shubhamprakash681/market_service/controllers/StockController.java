@@ -22,14 +22,14 @@ public class StockController {
         return stockService.findAll(q, pageable);
     }
 
-    @GetMapping("/{symbol}")
-    StockResponse stock(@PathVariable String symbol) {
-        return stockService.findBySymbol(symbol);
-    }
-
     @GetMapping("/search")
     List<StockResponse> search(@RequestParam String q) {
         return stockService.search(q);
+    }
+
+    @GetMapping("/{symbol}")
+    StockResponse stock(@PathVariable String symbol) {
+        return stockService.findBySymbol(symbol);
     }
 
 }

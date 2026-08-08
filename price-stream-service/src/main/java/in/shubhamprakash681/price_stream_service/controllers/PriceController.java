@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/prices")
+@RequestMapping({"/prices", "/api/prices"})
 @RequiredArgsConstructor
 public class PriceController {
     private final PriceQueryService priceQueryService;
@@ -18,14 +18,14 @@ public class PriceController {
         return priceQueryService.latest();
     }
 
-    @GetMapping("/{symbol}")
-    PriceResponse latestBySymbol(@PathVariable String symbol) {
-        return priceQueryService.latestBySymbol(symbol);
-    }
-
     @GetMapping("/history")
     List<PriceResponse> history(@RequestParam(required = false) String symbol,
                                 @RequestParam(defaultValue = "100") int limit) {
         return priceQueryService.history(symbol, limit);
+    }
+
+    @GetMapping("/{symbol}")
+    PriceResponse latestBySymbol(@PathVariable String symbol) {
+        return priceQueryService.latestBySymbol(symbol);
     }
 }

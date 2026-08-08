@@ -8,6 +8,7 @@ tradex:
     portfolio: lb://portfolio-service
     price-stream: lb://price-stream-service
     price-stream-ws: lb:ws://price-stream-service
+    notification: lb://notification-service
 
 spring:
   cloud:
@@ -28,3 +29,5 @@ springdoc:
         url: /portfolio/v3/api-docs
       - name: Price Stream Service
         url: /prices/v3/api-docs
+      - name: Notification Service
+        url: /notifications/v3/api-docs

@@ -5,6 +5,7 @@ import in.shubhamprakash681.price_stream_service.config.PriceStreamProperties;
 import in.shubhamprakash681.price_stream_service.data_seeding.SeedPriceCatalog;
 import in.shubhamprakash681.price_stream_service.dtos.PriceTick;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "tradex.prices.generation", name = "enabled", havingValue = "true", matchIfMissing = true)
 // Service to generate synthetic PriceTick and publish using Kafka
 public class PriceGeneratorService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
@@ -28,7 +30,6 @@ public class PriceGeneratorService {
     private final Random random = new Random();
 
     @Scheduled(fixedDelayString = "${tradex.prices.generation-interval-ms:2000}")
-    //  TODO: Call Third Party API here for non-synthetic symbol
     public void syntheticBatchGenerator() {
         for (String configuredSymbol : properties.getSymbols()) {
             String symbol = configuredSymbol.trim().toUpperCase();

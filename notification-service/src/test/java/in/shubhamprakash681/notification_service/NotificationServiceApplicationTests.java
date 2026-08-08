@@ -1,10 +1,10 @@
-package in.shubhamprakash681.common_lib;
+package in.shubhamprakash681.notification_service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class CommonLibApplicationTests {
+class NotificationServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

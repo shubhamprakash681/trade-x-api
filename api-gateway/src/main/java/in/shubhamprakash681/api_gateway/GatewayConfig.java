@@ -25,8 +25,8 @@ public class GatewayConfig {
                               @Value("${tradex.services.auth:lb://auth-service}") String authServiceUrl,
                               @Value("${tradex.services.market:lb://market-service}") String marketServiceUrl,
                               @Value("${tradex.services.portfolio:lb://portfolio-service}") String portfolioServiceUrl,
-                              @Value("${tradex.services.portfolio:lb://price-stream}") String priceStreamServiceUrl,
-                              @Value("${tradex.services.portfolio:lb://price-stream-ws}") String priceStreamWebSocketUrl,
+                              @Value("${tradex.services.price-stream:lb://price-stream-service}") String priceStreamServiceUrl,
+                              @Value("${tradex.services.price-stream-ws:lb:ws://price-stream-service}") String priceStreamWebSocketUrl,
                               @Value("${tradex.services.notification:lb://notification-service}") String notificationServiceUrl) {
         return builder.routes()
                 .route("auth-api", route -> route
@@ -37,23 +37,22 @@ public class GatewayConfig {
                         .uri(marketServiceUrl))
                 .route("market-api", route -> route
                         .path("/api/market/**")
-                        .filters(filter -> filter.rewritePath("/api/market/(?<segment>.*)",
-                                "/market/${segment}"))
+                        .uri(marketServiceUrl))
+                .route("market-admin-api", route -> route
+                        .path("/api/admin/market/**")
                         .uri(marketServiceUrl))
                 .route("portfolio-api", route -> route
                         .path("/api/portfolio/**", "/api/orders/**", "/api/transactions/**")
                         .uri(portfolioServiceUrl))
                 .route("price-api", route -> route
                         .path("/api/prices/**")
-                        .filters(filter -> filter.rewritePath("/api/prices/(?<segment>.*)",
-                                "/prices/${segment}"))
                         .uri(priceStreamServiceUrl))
                 .route("price-ws", route -> route
                         .path("/ws", "/ws/**")
                         .uri(priceStreamWebSocketUrl))
                 .route("notification-api", route -> route
                         .path("/api/watchlist", "/api/watchlist/**", "/api/alerts", "/api/alerts/**",
-                                "/api/notifications", "/api/notifications/**")
+                                "/api/notifications", "/api/notifications/**", "/api/dashboard", "/api/dashboard/**")
                         .filters(filter -> filter.rewritePath("/api/(?<segment>.*)",
                                 "/${segment}"))
                         .uri(notificationServiceUrl))

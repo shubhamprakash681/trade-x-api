@@ -1,0 +1,38 @@
+server:
+  port: ${NOTIFICATION_SERVICE_PORT:8085}
+
+spring:
+  datasource:
+    url: ${NOTIFICATION_DB_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5431}/${POSTGRES_DB:tradex_db}}
+    username: ${NOTIFICATION_DB_USERNAME:${POSTGRES_USER}}
+    password: ${NOTIFICATION_DB_PASSWORD:${POSTGRES_PASSWORD}}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: in.shubhamprakash681.notification_service.dtos,in.shubhamprakash681.price_stream_service.dtos,in.shubhamprakash681.market_service.dtos
+        spring.json.value.default.type: in.shubhamprakash681.notification_service.dtos.PriceTick
+
+tradex:
+  notifications:
+    price-topic: ${TRADEX_PRICE_TOPIC:tradex.market.prices}
+    watchlist-cache-ttl-minutes: ${TRADEX_WATCHLIST_CACHE_TTL_MINUTES:10}
+    notification-limit: ${TRADEX_NOTIFICATION_LIMIT:100}
+
+springdoc:
+  packages-to-scan: in.shubhamprakash681.notification_service.controllers
