@@ -1,1 +1,3 @@
-/logout throwing 403 Forbidden even with proper access token
+/logout throwing 403 Forbidden even with proper access token - Fixed
+
+All endpoints should reject Revoked Tokens (token in revoked_tokens table)

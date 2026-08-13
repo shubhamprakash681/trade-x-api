@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/orders", "/api/orders"})
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController {
     private final PortfolioService portfolioService;
 
     @PostMapping("/buy")
     OrderDtos.OrderResponse buy(@AuthenticationPrincipal JwtPrincipal principal,
-                                @Valid @RequestBody OrderDtos.OrderRequest request) {
+            @Valid @RequestBody OrderDtos.OrderRequest request) {
         return portfolioService.buy(principal, request);
     }
 
     @PostMapping("/sell")
     OrderDtos.OrderResponse sell(@AuthenticationPrincipal JwtPrincipal principal,
-                                 @Valid @RequestBody OrderDtos.OrderRequest request) {
+            @Valid @RequestBody OrderDtos.OrderRequest request) {
         return portfolioService.sell(principal, request);
     }
 
