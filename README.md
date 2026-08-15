@@ -167,6 +167,29 @@ These events are consumed by the WebSocket service and streamed to connected cli
 - Docker
 - Docker Compose
 
+## Run the complete backend with Docker Compose
+
+```bash
+cp .env.example .env
+# Edit .env and replace the example database password and JWT secret.
+docker compose up --build
+```
+
+The gateway is available at `http://localhost:8080`; the backing services are
+kept on the internal Docker network. Compose starts PostgreSQL, Redis, Kafka,
+RabbitMQ, Config Server, Eureka, and every application service in dependency
+order.
+
+All application services run with the `prod` Spring profile. Their production
+configuration is stored in `config-server/src/main/resources/config-repo` as
+`application-prod.yml` plus one `*-prod.yml` file per service. Secrets remain
+environment variables and are deliberately not committed.
+
+Swagger UI is exposed only by the gateway at
+`http://localhost:8080/swagger-ui.html`. It aggregates the OpenAPI documents
+for all backend services; individual service Swagger UIs are disabled and the
+service ports are not published by Compose.
+
 ---
 
 # Milestone 1 – Foundation

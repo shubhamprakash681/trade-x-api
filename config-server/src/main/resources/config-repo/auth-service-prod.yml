@@ -1,0 +1,16 @@
+server:
+  port: ${AUTH_SERVICE_PORT:8081}
+  shutdown: graceful
+
+spring:
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:postgresql://postgres:5432/${POSTGRES_DB:tradex}}
+    username: ${AUTH_DB_USERNAME:${POSTGRES_USER}}
+    password: ${AUTH_DB_PASSWORD:${POSTGRES_PASSWORD}}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+
+springdoc:
+  swagger-ui:
+    enabled: false

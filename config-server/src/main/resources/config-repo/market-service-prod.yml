@@ -1,0 +1,18 @@
+server:
+  port: ${MARKET_SERVICE_PORT:8082}
+  shutdown: graceful
+
+spring:
+  datasource:
+    url: ${MARKET_DB_URL:jdbc:postgresql://postgres:5432/${POSTGRES_DB:tradex}}
+    username: ${MARKET_DB_USERNAME:${POSTGRES_USER}}
+    password: ${MARKET_DB_PASSWORD:${POSTGRES_PASSWORD}}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+
+springdoc:
+  swagger-ui:
+    enabled: false
