@@ -172,10 +172,10 @@ These events are consumed by the WebSocket service and streamed to connected cli
 ```bash
 cp .env.example .env
 # Edit .env and replace the example database password and JWT secret.
-docker compose up --build
+docker compose -f docker-compose-prod.yml up --build
 ```
 
-The gateway is available at `http://localhost:8080`; the backing services are
+The gateway is available through the reverse proxy. The backing services are
 kept on the internal Docker network. Compose starts PostgreSQL, Redis, Kafka,
 RabbitMQ, Config Server, Eureka, and every application service in dependency
 order.
@@ -186,9 +186,36 @@ configuration is stored in `config-server/src/main/resources/config-repo` as
 environment variables and are deliberately not committed.
 
 Swagger UI is exposed only by the gateway at
-`http://localhost:8080/swagger-ui.html`. It aggregates the OpenAPI documents
+`https://<tradex-domain>/swagger-ui.html`. It aggregates the OpenAPI documents
 for all backend services; individual service Swagger UIs are disabled and the
 service ports are not published by Compose.
+
+## Deploy alongside VideoShare on one EC2 VM
+
+TradeX and VideoShare can share one VM and one Nginx entry point. They keep
+their containers, databases, and named volumes separate; only the gateway and
+VideoShare Nginx join a shared Docker network.
+
+```bash
+# Run once on the EC2 VM.
+docker network create shared-proxy
+
+# Add VIDEOSHARE_DOMAIN, TRADEX_DOMAIN, and SHARED_PROXY_NETWORK from
+# videoshare/.env.example to VideoShare's existing videoshare/.env file.
+docker compose -f videoshare/docker-compose.yml up -d --build
+
+# Start TradeX from its own checkout after creating its production .env file.
+docker compose -f docker-compose-prod.yml up -d --build
+```
+
+The common routing configuration is in
+[videoshare/nginx/sites.conf.template](videoshare/nginx/sites.conf.template).
+Set `TRADEX_DOMAIN` in `videoshare/.env`, point its DNS record at the VM, and
+obtain a Let's Encrypt certificate for it before recreating Nginx. The current
+Nginx configuration routes `VIDEOSHARE_DOMAIN` to the VideoShare load-balanced
+upstream and every request for `TRADEX_DOMAIN` to the TradeX API gateway.
+Do not expose TradeX database, Kafka, Redis, RabbitMQ, Config Server, or
+service ports in the EC2 security group.
 
 ---
 

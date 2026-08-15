@@ -144,8 +144,11 @@ services:
     environment:
       <<: *service-environment
       SERVER_PORT: ${API_GATEWAY_PORT:-8080}
-    ports:
-      - "${API_GATEWAY_PORT:-8080}:${API_GATEWAY_PORT:-8080}"
+    networks:
+      tradex:
+      edge:
+        aliases:
+          - tradex-gateway
     depends_on:
       config-server:
         condition: service_healthy
@@ -250,6 +253,9 @@ services:
 networks:
   tradex:
     driver: bridge
+  edge:
+    name: ${SHARED_PROXY_NETWORK:-shared-proxy}
+    external: true
 
 volumes:
   postgres-data:
