@@ -45,12 +45,18 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 FROM nginx:1.29-alpine AS nginx
 
+# Remove the default Nginx virtual host
+RUN rm -f /etc/nginx/conf.d/default.conf
+
+# Copy our main Nginx configuration
 COPY nginx/conf/nginx.conf \
      /etc/nginx/nginx.conf
 
+# Copy our application-specific virtual hosts
 COPY nginx/conf/conf.d/ \
      /etc/nginx/conf.d/
 
+# Directory used by Let's Encrypt ACME challenge
 RUN mkdir -p /var/www/certbot
 
 EXPOSE 80 443
