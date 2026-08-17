@@ -58,27 +58,27 @@ public class GatewayConfig {
                         .uri(notificationServiceUrl))
                 .route("auth-openapi", route -> route
                         .path("/auth/v3/api-docs")
-                        .filters(filter -> filter.rewritePath("/auth/v3/api-docs",
+                        .filters(filter -> filter.preserveHostHeader().rewritePath("/auth/v3/api-docs",
                                 "/v3/api-docs"))
                         .uri(authServiceUrl))
                 .route("market-openapi", route -> route
                         .path("/market/v3/api-docs")
-                        .filters(filter -> filter.rewritePath("/market/v3/api-docs",
+                        .filters(filter -> filter.preserveHostHeader().rewritePath("/market/v3/api-docs",
                                 "/v3/api-docs"))
                         .uri(marketServiceUrl))
                 .route("portfolio-openapi", route -> route
                         .path("/portfolio/v3/api-docs")
-                        .filters(filter -> filter.rewritePath("/portfolio/v3/api-docs",
+                        .filters(filter -> filter.preserveHostHeader().rewritePath("/portfolio/v3/api-docs",
                                 "/v3/api-docs"))
                         .uri(portfolioServiceUrl))
                 .route("prices-openapi", route -> route
                         .path("/prices/v3/api-docs")
-                        .filters(filter -> filter.rewritePath("/prices/v3/api-docs",
+                        .filters(filter -> filter.preserveHostHeader().rewritePath("/prices/v3/api-docs",
                                 "/v3/api-docs"))
                         .uri(priceStreamServiceUrl))
                 .route("notifications-openapi", route -> route
                         .path("/notifications/v3/api-docs")
-                        .filters(filter -> filter.rewritePath("/notifications/v3/api-docs",
+                        .filters(filter -> filter.preserveHostHeader().rewritePath("/notifications/v3/api-docs",
                                 "/v3/api-docs"))
                         .uri(notificationServiceUrl))
                 .build();
