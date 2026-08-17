@@ -5,7 +5,14 @@ upgrade
 
 Generate SSL Certificate using certbot
   - sudo apt install certbot
-  - sudo certbot certonly --standalone --preferred-challenges http -d api.tradex.shubhamprakash681.in -d www.api.tradex.shubhamprakash681.in
+  - sudo docker compose run --rm certbot certonly \
+    --webroot \
+    --webroot-path=/var/www/certbot \
+    --email shubhamprakash444@example.com \
+    --agree-tos \
+    --no-eff-email \
+    -d api.tradex.shubhamprakash681.in \
+    -d www.api.tradex.shubhamprakash681.in
 
 if git repo is private-
   - create ssh key in .ssh dir:-

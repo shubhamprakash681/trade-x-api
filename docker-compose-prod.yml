@@ -42,35 +42,37 @@ x-java-service: &java-service
 
 services:
   # ==========================================================
+  # CERTBOT
+  # ==========================================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: tradex-certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    networks:
+      - tradex
+
+  # ==========================================================
   # NGINX
   # ==========================================================
   nginx:
     build:
       context: .
-      dockerfile: Dockerfile
-      target: nginx
-
-    image: tradex-nginx:latest
-
+      dockerfile: nginx/Dockerfile
     restart: unless-stopped
-
-    ports:
-      - "80:80"
-      - "443:443"
-
-    volumes:
-      # Let's Encrypt certificates
-      - certbot-conf:/etc/letsencrypt:ro
-
-      # ACME challenge files
-      - certbot-www:/var/www/certbot:ro
-
-    networks:
-      - tradex
-
     depends_on:
       api-gateway:
         condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    networks:
+      - tradex
 
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health | grep -q healthy"]
@@ -516,10 +518,12 @@ volumes:
   redis-data:
     name: tradex_redis_volume_prod
   rabbitmq-data:
-    name: tradex_rabbitmq_volume_prod
+    name: tradex_config_rabbitmq_volume_prod
   kafka-data:
     name: tradex_kafka_volume_prod
-  certbot-conf:
-    name: tradex_certbot_conf
-  certbot-www:
-    name: tradex_certbot_www
+  certbot-etc:
+    name: tradex_certbot_etc
+  certbot-var:
+    name: tradex_certbot_var
+  certbot-webroot:
+    name: tradex_certbot_webroot
