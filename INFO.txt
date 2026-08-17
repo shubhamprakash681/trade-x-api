@@ -5,7 +5,7 @@ upgrade
 
 Generate SSL Certificate using certbot
   - sudo apt install certbot
-  - sudo docker compose run --rm certbot certonly \
+  - sudo docker compose -f docker-compose-prod.yml run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email shubhamprakash444@example.com \
