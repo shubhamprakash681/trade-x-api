@@ -3,9 +3,11 @@ create & ssh to vm using ssh key
 update
 upgrade
 
-Generate SSL Certificate using certbot
-  - sudo apt install certbot
-  - sudo docker compose -f docker-compose-prod.yml run --rm certbot certonly \
+Start stack first (nginx boots in HTTP-only mode until certs exist):
+  - docker compose -f docker-compose-prod.yml up -d --build
+
+Generate SSL certificate using certbot (nginx must be running on port 80):
+  - docker compose -f docker-compose-prod.yml run --rm certbot certonly \
     --webroot \
     --webroot-path=/var/www/certbot \
     --email shubhamprakash444@gmail.com \
@@ -13,6 +15,9 @@ Generate SSL Certificate using certbot
     --no-eff-email \
     -d api.tradex.shubhamprakash681.in \
     -d www.api.tradex.shubhamprakash681.in
+
+Reload nginx so it switches to the HTTPS config:
+  - docker compose -f docker-compose-prod.yml up -d --force-recreate nginx
 
 if git repo is private-
   - create ssh key in .ssh dir:-

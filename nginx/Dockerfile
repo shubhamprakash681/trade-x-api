@@ -1,15 +1,16 @@
 FROM nginx:latest
 
-# Remove default configuration
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy custom config (paths relative to repo root build context)
 COPY ./nginx/conf/nginx.conf /etc/nginx/nginx.conf
-COPY ./nginx/conf/conf.d/tradex.conf /etc/nginx/conf.d/tradex.conf
+COPY ./nginx/conf/templates/tradex.bootstrap.conf /etc/nginx/templates/tradex.bootstrap.conf
+COPY ./nginx/conf/templates/tradex.production.conf /etc/nginx/templates/tradex.production.conf
+COPY ./nginx/docker-entrypoint.sh /docker-entrypoint.sh
 
-# Ensure ACME webroot and Let's Encrypt directories exist
-RUN mkdir -p /var/www/certbot /etc/letsencrypt/live /etc/letsencrypt/archive
+RUN mkdir -p /var/www/certbot /etc/letsencrypt/live /etc/letsencrypt/archive \
+    && chmod +x /docker-entrypoint.sh
 
 EXPOSE 80 443
 
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
