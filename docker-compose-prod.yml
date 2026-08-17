@@ -263,6 +263,8 @@ services:
 
       SERVER_PORT: ${API_GATEWAY_PORT:-8080}
 
+      SERVER_FORWARD_HEADERS_STRATEGY: FRAMEWORK
+
       JAVA_TOOL_OPTIONS: >-
         -Xms128m
         -Xmx384m
