@@ -2,6 +2,9 @@ name: tradex
 
 x-service-environment: &service-environment
   SPRING_PROFILES_ACTIVE: prod
+  # Make Spring applications reconstruct the public URL from Nginx's
+  # X-Forwarded-* headers instead of the Docker network address.
+  SERVER_FORWARD_HEADERS_STRATEGY: FRAMEWORK
   SPRING_CONFIG_IMPORT: configserver:http://config-server:${CONFIG_SERVER_PORT:-8888}
   SPRING_CLOUD_CONFIG_FAIL_FAST: "true"
   CONFIG_SERVER_URL: http://config-server:${CONFIG_SERVER_PORT:-8888}
@@ -34,63 +37,135 @@ x-java-service: &java-service
   environment:
     <<: *service-environment
   healthcheck:
-    test: ["CMD-SHELL", "wget -qO- http://localhost:$${SERVER_PORT}/actuator/health/readiness | grep -q 'UP'"]
+    test:
+      [
+        "CMD-SHELL",
+        "wget -qO- http://localhost:$${SERVER_PORT}/actuator/health/readiness | grep -q 'UP'",
+      ]
     interval: 15s
     timeout: 5s
     retries: 12
     start_period: 45s
 
 services:
+  # ==========================================================
+  # NGINX
+  # ==========================================================
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    networks:
+      - tradex
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health | grep -q healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    mem_limit: 128m
+    cpus: 0.25
+
+  # ==========================================================
+  # PostgreSQL
+  # ==========================================================
   postgres:
     image: postgres:16.4-alpine
+
     restart: unless-stopped
+
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-tradex}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-tradex}
+
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
     networks:
       - tradex
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 12
 
+    mem_limit: 512m
+    cpus: 0.50
+
+  # ==========================================================
+  # Redis
+  # ==========================================================
   redis:
     image: redis:7.4.1-alpine
+
     restart: unless-stopped
+
     command: ["redis-server", "--appendonly", "yes"]
+
     volumes:
       - redis-data:/data
+
     networks:
       - tradex
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 12
 
+    mem_limit: 256m
+    cpus: 0.25
+
+  # ==========================================================
+  # RabbitMQ
+  # ==========================================================
   rabbitmq:
     image: rabbitmq:4.0.5-management-alpine
+
     restart: unless-stopped
+
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+
     networks:
       - tradex
+
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
       timeout: 5s
       retries: 12
 
+    mem_limit: 512m
+    cpus: 0.50
+
+  # ==========================================================
+  # Kafka
+  # ==========================================================
   kafka:
     image: apache/kafka:3.9.1
+
     restart: unless-stopped
+
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -104,152 +179,330 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
     volumes:
       - kafka-data:/var/lib/kafka/data
+
     networks:
       - tradex
+
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1",
+        ]
       interval: 10s
       timeout: 10s
       retries: 12
       start_period: 20s
 
+    mem_limit: 768m
+    cpus: 0.75
+
+  # ==========================================================
+  # Config Server
+  # ==========================================================
   config-server:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: config-server
+
     environment:
       SPRING_PROFILES_ACTIVE: prod,native
+
       SERVER_PORT: ${CONFIG_SERVER_PORT:-8888}
 
+      JAVA_TOOL_OPTIONS: >-
+        -Xms64m
+        -Xmx256m
+        -XX:+UseSerialGC
+
+    mem_limit: 384m
+    cpus: 0.30
+
+  # ==========================================================
+  # Discovery Server
+  # ==========================================================
   discovery-server:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: discovery-server
+
     environment:
       SPRING_PROFILES_ACTIVE: prod
+
       SERVER_PORT: ${EUREKA_SERVER_PORT:-8761}
 
+      JAVA_TOOL_OPTIONS: >-
+        -Xms64m
+        -Xmx256m
+        -XX:+UseSerialGC
+
+    mem_limit: 384m
+    cpus: 0.30
+
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+  # ==========================================================
+  # API Gateway
+  # ==========================================================
   api-gateway:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: api-gateway
+
     environment:
       <<: *service-environment
+
       SERVER_PORT: ${API_GATEWAY_PORT:-8080}
-    networks:
-      tradex:
-      edge:
-        aliases:
-          - tradex-gateway
+
+      SPRINGDOC_SWAGGER_UI_SERVER_URL: /
+      SPRINGDOC_SWAGGER_UI_URL: /swagger-ui.html
+
+      JAVA_TOOL_OPTIONS: >-
+        -Xms128m
+        -Xmx384m
+        -XX:+UseSerialGC
+
+    mem_limit: 512m
+    cpus: 0.50
+
     depends_on:
       config-server:
         condition: service_healthy
+
       discovery-server:
         condition: service_healthy
 
+  # ==========================================================
+  # Auth Service
+  # ==========================================================
   auth-service:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: auth-service
+
     environment:
       <<: *service-environment
+
       SERVER_PORT: ${AUTH_SERVICE_PORT:-8081}
+
+      JAVA_TOOL_OPTIONS: >-
+        -Xms128m
+        -Xmx384m
+        -XX:+UseSerialGC
+
+    mem_limit: 512m
+    cpus: 0.50
+
     depends_on:
       postgres:
         condition: service_healthy
+
       config-server:
         condition: service_healthy
+
       discovery-server:
         condition: service_healthy
 
+  # ==========================================================
+  # Market Service
+  # ==========================================================
   market-service:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: market-service
+
     environment:
       <<: *service-environment
+
       SERVER_PORT: ${MARKET_SERVICE_PORT:-8082}
+
+      JAVA_TOOL_OPTIONS: >-
+        -Xms128m
+        -Xmx384m
+        -XX:+UseSerialGC
+
+    mem_limit: 512m
+    cpus: 0.50
+
     depends_on:
       postgres:
         condition: service_healthy
+
       kafka:
         condition: service_healthy
+
       config-server:
         condition: service_healthy
+
       discovery-server:
         condition: service_healthy
 
+  # ==========================================================
+  # Portfolio Service
+  # ==========================================================
   portfolio-service:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: portfolio-service
+
     environment:
       <<: *service-environment
+
       SERVER_PORT: ${PORTFOLIO_SERVICE_PORT:-8083}
+
+      JAVA_TOOL_OPTIONS: >-
+        -Xms128m
+        -Xmx384m
+        -XX:+UseSerialGC
+
+    mem_limit: 512m
+    cpus: 0.50
+
     depends_on:
       postgres:
         condition: service_healthy
+
       config-server:
         condition: service_healthy
+
       discovery-server:
         condition: service_healthy
 
+  # ==========================================================
+  # Price Stream Service
+  # ==========================================================
   price-stream-service:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: price-stream-service
+
     environment:
       <<: *service-environment
+
       SERVER_PORT: ${PRICE_STREAM_SERVICE_PORT:-8084}
+
+      JAVA_TOOL_OPTIONS: >-
+        -Xms128m
+        -Xmx384m
+        -XX:+UseSerialGC
+
+    mem_limit: 512m
+    cpus: 0.50
+
     depends_on:
       postgres:
         condition: service_healthy
+
       redis:
         condition: service_healthy
+
       kafka:
         condition: service_healthy
+
       config-server:
         condition: service_healthy
+
       discovery-server:
         condition: service_healthy
 
+  # ==========================================================
+  # Notification Service
+  # ==========================================================
   notification-service:
     <<: *java-service
+
     build:
       context: .
+      dockerfile: Dockerfile
+      target: java-runtime
       args:
         SERVICE: notification-service
+
     environment:
       <<: *service-environment
+
       SERVER_PORT: ${NOTIFICATION_SERVICE_PORT:-8085}
+
+      JAVA_TOOL_OPTIONS: >-
+        -Xms128m
+        -Xmx384m
+        -XX:+UseSerialGC
+
+    mem_limit: 512m
+    cpus: 0.50
+
     depends_on:
       postgres:
         condition: service_healthy
+
       redis:
         condition: service_healthy
+
       kafka:
         condition: service_healthy
+
       config-server:
         condition: service_healthy
+
       discovery-server:
         condition: service_healthy
 
+  # ==========================================================
+  # CERTBOT
+  # ==========================================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: tradex-certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    networks:
+      - tradex
+
+# ============================================================
+# Networks
+# ============================================================
 networks:
   tradex:
     driver: bridge
@@ -257,12 +510,21 @@ networks:
     name: ${SHARED_PROXY_NETWORK:-shared-proxy}
     external: true
 
+# ============================================================
+# Volumes
+# ============================================================
 volumes:
   postgres-data:
     name: tradex_postgres_volume_prod
   redis-data:
     name: tradex_redis_volume_prod
-  kafka-data:
-    name: tradex_kafka_volume_prod
   rabbitmq-data:
     name: tradex_config_rabbitmq_volume_prod
+  kafka-data:
+    name: tradex_kafka_volume_prod
+  certbot-etc:
+    name: tradex_certbot_etc
+  certbot-var:
+    name: tradex_certbot_var
+  certbot-webroot:
+    name: tradex_certbot_webroot
