@@ -13,6 +13,8 @@ x-service-environment: &service-environment
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
   POSTGRES_DB: ${POSTGRES_DB:-tradex}
   TRADEX_JWT_SECRET: ${TRADEX_JWT_SECRET:?Set TRADEX_JWT_SECRET in .env}
+  AUTH_EMAIL_FROM: ${AUTH_EMAIL_FROM:-covisionteam@gmail.com}
+  AUTH_EMAIL_PASSWORD: ${AUTH_EMAIL_PASSWORD:-?Set AUTH_EMAIL_PASSWORD in .env}
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -37,11 +39,7 @@ x-java-service: &java-service
   environment:
     <<: *service-environment
   healthcheck:
-    test:
-      [
-        "CMD-SHELL",
-        "wget -qO- http://localhost:$${SERVER_PORT}/actuator/health/readiness | grep -q 'UP'",
-      ]
+    test: ["CMD-SHELL", "wget -qO- http://localhost:$${SERVER_PORT}/actuator/health/readiness | grep -q 'UP'"]
     interval: 15s
     timeout: 5s
     retries: 12
@@ -187,11 +185,7 @@ services:
       - tradex
 
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1",
-        ]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 12
