@@ -1,5 +1,6 @@
 package in.shubhamprakash681.auth_service.controller;
 
+import in.shubhamprakash681.auth_service.dtos.AuthDtos;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,6 +43,18 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@Valid @RequestBody LogoutRequest request) {
         authService.logout(request.refreshToken());
+    }
+
+    @PostMapping("/password-recovery/request")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void requestPasswordRecovery(@Valid @RequestBody AuthDtos.PasswordRecoveryRequest request) {
+        authService.requestPasswordRecovery(request.email());
+    }
+
+    @PostMapping("/password-recovery/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody AuthDtos.PasswordResetRequest request) {
+        authService.resetPassword(request.email(), request.otp(), request.newPassword());
     }
 
 }

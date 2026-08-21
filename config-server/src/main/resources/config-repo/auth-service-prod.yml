@@ -11,6 +11,10 @@ spring:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:update}
 
+tradex:
+  email:
+    from: ${AUTH_EMAIL_FROM:noreply@tradex.com}
+
 springdoc:
   swagger-ui:
     enabled: false
