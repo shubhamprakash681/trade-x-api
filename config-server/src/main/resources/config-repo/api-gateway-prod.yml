@@ -2,6 +2,10 @@ server:
   port: ${API_GATEWAY_PORT:8080}
   shutdown: graceful
 
+tradex:
+  cors:
+    allowed-origins: ${TRADEX_ALLOWED_ORIGINS:https://tradex.shubhamprakash681.in,https://www.tradex.shubhamprakash681.in}
+
 spring:
   cloud:
     gateway:

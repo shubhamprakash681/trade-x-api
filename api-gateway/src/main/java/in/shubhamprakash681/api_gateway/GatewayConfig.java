@@ -83,9 +83,10 @@ public class GatewayConfig {
     }
 
     @Bean
-    CorsWebFilter corsWebFilter() {
+    CorsWebFilter corsWebFilter(
+            @Value("${tradex.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,https://tradex.shubhamprakash681.in,https://www.tradex.shubhamprakash681.in}") List<String> allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization", "Content-Type", "Location"));
