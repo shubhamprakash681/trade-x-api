@@ -3,8 +3,13 @@ package in.shubhamprakash681.auth_service.service;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.Set;
 
+import in.shubhamprakash681.auth_service.entity.OtpToken;
+import in.shubhamprakash681.auth_service.repositories.OtpTokenRepository;
+import in.shubhamprakash681.common_lib.email.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +35,12 @@ public class AuthService {
     private final RevokedTokenRepository revokedTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
+
+    private final OtpTokenRepository otpTokenRepository;
+    private final EmailService emailService;
+
+    @Value("${tradex.email.from:noreply@tradex.com}")
+    private String fromEmail;
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
@@ -114,4 +125,57 @@ public class AuthService {
         }
     }
 
+    // Random 6-digit number generator
+    private String generateOtp() {
+        return String.format("%06d", new java.util.Random().nextInt(999999));
+    }
+
+    @Transactional
+    public void requestPasswordRecovery(String email) {
+        String lowerEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmailIgnoreCase(lowerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        String otp = generateOtp();
+        
+        OtpToken token = otpTokenRepository.findByEmail(lowerEmail)
+                .orElse(OtpToken.builder().email(lowerEmail).build());
+                
+        token.setOtp(otp);
+        token.setExpiresAt(LocalDateTime.now().plusMinutes(10));
+        
+        otpTokenRepository.save(token);
+
+        emailService.sendEmail(
+            fromEmail,
+            user.getEmail(), 
+            "TradeX Password Reset", 
+            "Your OTP for password reset is: " + otp + "\nThis OTP is valid for 10 minutes."
+        );
+    }
+
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        String lowerEmail = email.trim().toLowerCase();
+        
+        OtpToken token = otpTokenRepository.findByEmail(lowerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP"));
+        
+        if (!token.getOtp().equals(otp)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid OTP");
+        }
+
+        if (token.getExpiresAt().isBefore(java.time.LocalDateTime.now())) {
+            otpTokenRepository.delete(token);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "OTP has expired");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(lowerEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        otpTokenRepository.delete(token);
+    }
 }

@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 import in.shubhamprakash681.common_lib.security.JwtProperties;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"in.shubhamprakash681.auth_service", "in.shubhamprakash681.common_lib"})
 @EnableConfigurationProperties(JwtProperties.class)
 public class AuthServiceApplication {
 

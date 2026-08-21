@@ -25,6 +25,8 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             "/api/auth/signup",
             "/api/auth/login",
             "/api/auth/refresh",
+            "/api/auth/password-recovery/request",
+            "/api/auth/password-recovery/reset",
             "/api/auth/logout",
             "/swagger-ui", // for swagger-ui page
             "/webjars/swagger-ui", // for swagger-ui resources

@@ -31,4 +31,12 @@ public record AuthDtos() {
 
     }
 
+    public record PasswordRecoveryRequest(@NotBlank @Email String email) {}
+
+    public record PasswordResetRequest(
+        @NotBlank @Email String email,
+        @NotBlank String otp,
+        @NotBlank @Size(min = 8, max = 80) String newPassword
+    ) {}
+
 }

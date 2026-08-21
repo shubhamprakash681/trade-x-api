@@ -53,8 +53,6 @@ public class GatewayConfig {
                 .route("notification-api", route -> route
                         .path("/api/watchlist", "/api/watchlist/**", "/api/alerts", "/api/alerts/**",
                                 "/api/notifications", "/api/notifications/**", "/api/dashboard", "/api/dashboard/**")
-                        .filters(filter -> filter.rewritePath("/api/(?<segment>.*)",
-                                "/${segment}"))
                         .uri(notificationServiceUrl))
                 .route("auth-openapi", route -> route
                         .path("/auth/v3/api-docs")
