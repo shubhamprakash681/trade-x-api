@@ -40,7 +40,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_KEY }}
           HOST: ${{ secrets.OCI_HOST }}
-          PORT: ${{ secrets.OCI_PORT || '22' }}
+          PORT: ${{ vars.OCI_PORT || secrets.OCI_PORT || '22' }}
         run: |
           if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$HOST" ]; then
             echo "::error::Secrets OCI_SSH_KEY and OCI_HOST must be configured in GitHub Secrets."
@@ -56,25 +56,28 @@ jobs:
           chmod 644 ~/.ssh/known_hosts
 
       - name: Sync .env File (if configured in GitHub Secrets)
-        if: ${{ secrets.PROD_ENV_FILE != '' }}
         env:
           PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
           HOST: ${{ secrets.OCI_HOST }}
-          USERNAME: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
-          PORT: ${{ secrets.OCI_PORT || '22' }}
-          DEPLOY_PATH: ${{ secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
+          USERNAME: ${{ vars.OCI_USERNAME || secrets.OCI_USERNAME || 'ubuntu' }}
+          PORT: ${{ vars.OCI_PORT || secrets.OCI_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.OCI_DEPLOY_PATH || secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
         run: |
-          TARGET_DIR="${DEPLOY_PATH/#\~/$HOME}"
-          echo "$PROD_ENV_FILE" | ssh -o ServerAliveInterval=30 -p "$PORT" "$USERNAME@$HOST" \
-            "mkdir -p '$TARGET_DIR' && cat > '$TARGET_DIR/.env' && chmod 600 '$TARGET_DIR/.env'"
-          echo "==> Successfully synced .env from GitHub Secrets."
+          if [ -n "$PROD_ENV_FILE" ]; then
+            TARGET_DIR="${DEPLOY_PATH/#\~/$HOME}"
+            echo "$PROD_ENV_FILE" | ssh -o ServerAliveInterval=30 -p "$PORT" "$USERNAME@$HOST" \
+              "mkdir -p '$TARGET_DIR' && cat > '$TARGET_DIR/.env' && chmod 600 '$TARGET_DIR/.env'"
+            echo "==> Successfully synced .env from GitHub Secrets."
+          else
+            echo "==> No PROD_ENV_FILE secret provided, skipping .env sync."
+          fi
 
       - name: Execute Remote Deployment via SSH
         env:
           HOST: ${{ secrets.OCI_HOST }}
-          USERNAME: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
-          PORT: ${{ secrets.OCI_PORT || '22' }}
-          DEPLOY_PATH: ${{ secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
+          USERNAME: ${{ vars.OCI_USERNAME || secrets.OCI_USERNAME || 'ubuntu' }}
+          PORT: ${{ vars.OCI_PORT || secrets.OCI_PORT || '22' }}
+          DEPLOY_PATH: ${{ vars.OCI_DEPLOY_PATH || secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
           TARGET_SERVICE: ${{ inputs.service || 'all' }}
           NO_CACHE: ${{ inputs.no_cache || false }}
         run: |
