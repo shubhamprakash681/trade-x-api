@@ -64,9 +64,9 @@ jobs:
           DEPLOY_PATH: ${{ vars.OCI_DEPLOY_PATH || secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
         run: |
           if [ -n "$PROD_ENV_FILE" ]; then
-            TARGET_DIR="${DEPLOY_PATH/#\~/$HOME}"
+            echo "==> Syncing .env to remote server..."
             echo "$PROD_ENV_FILE" | ssh -o ServerAliveInterval=30 -p "$PORT" "$USERNAME@$HOST" \
-              "mkdir -p '$TARGET_DIR' && cat > '$TARGET_DIR/.env' && chmod 600 '$TARGET_DIR/.env'"
+              "eval TARGET_DIR=\"$DEPLOY_PATH\"; mkdir -p \"\$TARGET_DIR\" && cat > \"\$TARGET_DIR/.env\" && chmod 600 \"\$TARGET_DIR/.env\""
             echo "==> Successfully synced .env from GitHub Secrets."
           else
             echo "==> No PROD_ENV_FILE secret provided, skipping .env sync."
@@ -86,7 +86,7 @@ jobs:
             set -eo pipefail
 
             # Expand tilde if present
-            DEPLOY_DIR="${DEPLOY_PATH/#\~/$HOME}"
+            eval DEPLOY_DIR="$DEPLOY_PATH"
             echo "==> Deploy directory: ${DEPLOY_DIR}"
 
             if [ ! -d "$DEPLOY_DIR" ]; then
