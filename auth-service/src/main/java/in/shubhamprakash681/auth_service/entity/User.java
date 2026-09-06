@@ -41,6 +41,9 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
     private Set<UserRoles> roles;

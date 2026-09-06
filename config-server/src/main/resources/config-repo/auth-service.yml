@@ -28,6 +28,16 @@ spring:
 tradex:
   email:
     from: ${AUTH_EMAIL_FROM:noreply@tradex.com}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME}
+    api-key: ${CLOUDINARY_API_KEY}
+    api-secret: ${CLOUDINARY_API_SECRET}
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 springdoc:
   packages-to-scan: in.shubhamprakash681.auth_service.controller

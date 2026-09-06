@@ -27,8 +27,7 @@ public record AuthDtos() {
     public record AuthResponse(String accessToken, String refreshToken, UserResponse user) {
     }
 
-    public record UserResponse(Long id, String email, String fullName, Set<UserRoles> roles, LocalDateTime createdAt) {
-
+    public record UserResponse(Long id, String email, String fullName, String avatarUrl, Set<UserRoles> roles, LocalDateTime createdAt) {
     }
 
     public record PasswordRecoveryRequest(@NotBlank @Email String email) {}

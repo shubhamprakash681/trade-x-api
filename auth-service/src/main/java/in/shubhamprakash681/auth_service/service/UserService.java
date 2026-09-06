@@ -5,6 +5,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import in.shubhamprakash681.auth_service.dtos.AuthDtos.UserResponse;
@@ -22,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
     public UserResponse me(JwtPrincipal parsedToken) {
@@ -33,6 +35,31 @@ public class UserService {
         User user = findUser(parsedToken);
 
         user.setFullName(updateProfileRequest.fullName().trim());
+        if (updateProfileRequest.avatarUrl() != null) {
+            user.setAvatarUrl(updateProfileRequest.avatarUrl().trim());
+        }
+        return authService.toResponse(user);
+    }
+
+    @Transactional
+    public UserResponse uploadAvatar(JwtPrincipal parsedToken, MultipartFile file) {
+        User user = findUser(parsedToken);
+
+        String url = cloudinaryService.uploadAvatar(user.getId(), file);
+        user.setAvatarUrl(url);
+
+        return authService.toResponse(user);
+    }
+
+    @Transactional
+    public UserResponse deleteAvatar(JwtPrincipal parsedToken) {
+        User user = findUser(parsedToken);
+
+        if (user.getAvatarUrl() != null) {
+            cloudinaryService.deleteAvatar(user.getId());
+            user.setAvatarUrl(null);
+        }
+
         return authService.toResponse(user);
     }
 
@@ -52,3 +79,4 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User Not Found"));
     }
 }
+

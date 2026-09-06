@@ -4,7 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record UserDtos() {
-    public record UpdateProfileRequest(@NotBlank @Size(min = 2, max = 120) String fullName) {
+    public record UpdateProfileRequest(
+            @NotBlank @Size(min = 2, max = 120) String fullName,
+            @Size(max = 500) String avatarUrl) {
     }
 
     public record ChangePasswordRequest(
