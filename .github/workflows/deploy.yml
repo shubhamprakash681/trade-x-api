@@ -1,0 +1,136 @@
+name: Deploy TradeX API to OCI instance
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "INFO.txt"
+      - "TODO.txt"
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Specific service to rebuild and restart (leave "all" for full stack)'
+        required: false
+        default: "all"
+        type: string
+      no_cache:
+        description: "Build images without cache (--no-cache)"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: production_deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Oracle Cloud VM
+    runs-on: ubuntu-latest
+    environment: TradeX API Production
+
+    steps:
+      - name: Checkout Code (for reference / commit info)
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.OCI_SSH_KEY }}
+          HOST: ${{ secrets.OCI_HOST }}
+          PORT: ${{ secrets.OCI_PORT || '22' }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ] || [ -z "$HOST" ]; then
+            echo "::error::Secrets OCI_SSH_KEY and OCI_HOST must be configured in GitHub Secrets."
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          # Scan and register host keys
+          ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Sync .env File (if configured in GitHub Secrets)
+        if: ${{ secrets.PROD_ENV_FILE != '' }}
+        env:
+          PROD_ENV_FILE: ${{ secrets.PROD_ENV_FILE }}
+          HOST: ${{ secrets.OCI_HOST }}
+          USERNAME: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
+          PORT: ${{ secrets.OCI_PORT || '22' }}
+          DEPLOY_PATH: ${{ secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
+        run: |
+          TARGET_DIR="${DEPLOY_PATH/#\~/$HOME}"
+          echo "$PROD_ENV_FILE" | ssh -o ServerAliveInterval=30 -p "$PORT" "$USERNAME@$HOST" \
+            "mkdir -p '$TARGET_DIR' && cat > '$TARGET_DIR/.env' && chmod 600 '$TARGET_DIR/.env'"
+          echo "==> Successfully synced .env from GitHub Secrets."
+
+      - name: Execute Remote Deployment via SSH
+        env:
+          HOST: ${{ secrets.OCI_HOST }}
+          USERNAME: ${{ secrets.OCI_USERNAME || 'ubuntu' }}
+          PORT: ${{ secrets.OCI_PORT || '22' }}
+          DEPLOY_PATH: ${{ secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
+          TARGET_SERVICE: ${{ inputs.service || 'all' }}
+          NO_CACHE: ${{ inputs.no_cache || false }}
+        run: |
+          ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=30 -p "$PORT" "$USERNAME@$HOST" \
+            "DEPLOY_PATH='$DEPLOY_PATH' TARGET_SERVICE='$TARGET_SERVICE' NO_CACHE='$NO_CACHE' bash -s" << 'EOF'
+            set -eo pipefail
+
+            # Expand tilde if present
+            DEPLOY_DIR="${DEPLOY_PATH/#\~/$HOME}"
+            echo "==> Deploy directory: ${DEPLOY_DIR}"
+
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "::error::Directory ${DEPLOY_DIR} does not exist on target host. Clone the repository first."
+              exit 1
+            fi
+
+            cd "$DEPLOY_DIR"
+
+            echo "==> Fetching latest changes from origin/main..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Verify .env exists
+            if [ ! -f ".env" ]; then
+              echo "::error::No .env file found in ${DEPLOY_DIR}! Please create it on the server or set the PROD_ENV_FILE GitHub Secret."
+              exit 1
+            fi
+
+            # Check docker and compose availability
+            if ! command -v docker &> /dev/null; then
+              echo "::error::Docker is not installed or not in PATH."
+              exit 1
+            fi
+
+            echo "==> Verifying docker compose configuration..."
+            docker compose -f docker-compose-prod.yml config > /dev/null
+
+            BUILD_FLAGS=""
+            if [ "$NO_CACHE" = "true" ]; then
+              BUILD_FLAGS="--no-cache"
+            fi
+
+            if [ "$TARGET_SERVICE" != "all" ] && [ -n "$TARGET_SERVICE" ]; then
+              echo "==> Rebuilding and restarting single service: ${TARGET_SERVICE}..."
+              docker compose -f docker-compose-prod.yml build $BUILD_FLAGS "$TARGET_SERVICE"
+              docker compose -f docker-compose-prod.yml up -d --no-deps "$TARGET_SERVICE"
+            else
+              echo "==> Deploying all services using docker-compose-prod.yml..."
+              docker compose -f docker-compose-prod.yml up -d --build $BUILD_FLAGS --remove-orphans
+            fi
+
+            echo "==> Cleaning up dangling images..."
+            docker image prune -f || true
+
+            echo "==> Checking container status..."
+            docker compose -f docker-compose-prod.yml ps
+
+            echo "==> Deployment completed successfully!"
+          EOF
