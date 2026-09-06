@@ -2,6 +2,7 @@ package in.shubhamprakash681.portfolio_service.services;
 
 import in.shubhamprakash681.common_lib.security.JwtPrincipal;
 import in.shubhamprakash681.portfolio_service.clients.MarketClient;
+import in.shubhamprakash681.portfolio_service.dtos.MarketDtos;
 import in.shubhamprakash681.portfolio_service.dtos.OrderDtos;
 import in.shubhamprakash681.portfolio_service.dtos.PortfolioDtos;
 import in.shubhamprakash681.portfolio_service.dtos.StockResponse;
@@ -16,6 +17,8 @@ import in.shubhamprakash681.portfolio_service.repositories.LedgerTransactionRepo
 import in.shubhamprakash681.portfolio_service.repositories.PortfolioAccountRepository;
 import in.shubhamprakash681.portfolio_service.repositories.TradeOrderRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -167,15 +170,15 @@ public class PortfolioService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDtos.OrderResponse> orderHistory(JwtPrincipal principal) {
-        return tradeOrderRepository.findByUserIdOrderByCreatedAtDesc(principal.userId())
-                .stream().map(this::toOrderResponse).toList();
+    public Page<OrderDtos.OrderResponse> orderHistory(JwtPrincipal principal, Pageable pageable) {
+        return tradeOrderRepository.findByUserIdOrderByCreatedAtDesc(principal.userId(), pageable)
+                .map(this::toOrderResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionResponse> transactions(JwtPrincipal principal) {
-        return ledgerTransactionRepository.findByUserIdOrderByCreatedAtDesc(principal.userId())
-                .stream().map(this::toTransactionResponse).toList();
+    public Page<TransactionResponse> transactions(JwtPrincipal principal, Pageable pageable) {
+        return ledgerTransactionRepository.findByUserIdOrderByCreatedAtDesc(principal.userId(), pageable)
+                .map(this::toTransactionResponse);
     }
 
     // DTO mappers
@@ -190,22 +193,37 @@ public class PortfolioService {
 
         BigDecimal unrealizedPnl = money(holdingsValue.subtract(investedValue));
 
+        BigDecimal todayPnl = money(holdings.stream()
+                .map(PortfolioDtos.HoldingResponse::todayPnl)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+                
+        BigDecimal previousHoldingsValue = holdingsValue.subtract(todayPnl);
+
         return new PortfolioDtos.PortfolioSummaryResponse(
                 account.getCashBalance(),
                 holdingsValue,
                 money(account.getCashBalance().add(holdingsValue)),
                 investedValue,
                 unrealizedPnl,
-                percent(unrealizedPnl, investedValue)
+                percent(unrealizedPnl, investedValue),
+                todayPnl,
+                percent(todayPnl, previousHoldingsValue)
         );
     }
 
     private PortfolioDtos.HoldingResponse toHoldingResponse(Holding holding) {
         StockResponse stock = marketClient.getStock(holding.getSymbol());
-        BigDecimal lastPrice = price(stock.referencePrice());
+        MarketDtos.CandleResponse candle = marketClient.getCandle(holding.getSymbol());
+        
+        BigDecimal referencePrice = price(stock.referencePrice());
+        BigDecimal lastPrice = price(candle.close());
+        
         BigDecimal investedValue = money(holding.getAveragePrice().multiply(holding.getQuantity()));
         BigDecimal marketValue = money(lastPrice.multiply(holding.getQuantity()));
         BigDecimal pnl = money(marketValue.subtract(investedValue));
+        
+        BigDecimal todayPnl = money(lastPrice.subtract(referencePrice).multiply(holding.getQuantity()));
+        BigDecimal todayPnlPercent = percent(lastPrice.subtract(referencePrice), referencePrice);
 
         return new PortfolioDtos.HoldingResponse(
                 holding.getSymbol(),
@@ -213,10 +231,13 @@ public class PortfolioService {
                 holding.getQuantity(),
                 holding.getAveragePrice(),
                 lastPrice,
+                referencePrice,
                 investedValue,
                 marketValue,
                 pnl,
-                percent(pnl, investedValue)
+                percent(pnl, investedValue),
+                todayPnl,
+                todayPnlPercent
         );
     }
 

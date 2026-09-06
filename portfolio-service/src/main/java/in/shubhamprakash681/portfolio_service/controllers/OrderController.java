@@ -5,6 +5,9 @@ import in.shubhamprakash681.portfolio_service.dtos.OrderDtos;
 import in.shubhamprakash681.portfolio_service.services.PortfolioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +32,8 @@ public class OrderController {
     }
 
     @GetMapping("/history")
-    List<OrderDtos.OrderResponse> history(@AuthenticationPrincipal JwtPrincipal principal) {
-        return portfolioService.orderHistory(principal);
+    Page<OrderDtos.OrderResponse> history(@AuthenticationPrincipal JwtPrincipal principal,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return portfolioService.orderHistory(principal, pageable);
     }
 }
