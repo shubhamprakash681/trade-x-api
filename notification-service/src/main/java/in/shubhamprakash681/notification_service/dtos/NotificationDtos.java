@@ -9,7 +9,11 @@ public class NotificationDtos {
             String title,
             String message,
             Long alertId,
+            boolean readStatus,
             LocalDateTime createdAt
     ) {
+    }
+
+    public record UnreadCountResponse(long count) {
     }
 }

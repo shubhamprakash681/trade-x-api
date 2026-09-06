@@ -14,7 +14,9 @@ public record PortfolioDtos() {
             BigDecimal totalValue,
             BigDecimal investedValue,
             BigDecimal unrealizedPnl,
-            BigDecimal unrealizedPnlPercent
+            BigDecimal unrealizedPnlPercent,
+            BigDecimal todayPnl,
+            BigDecimal todayPnlPercent
     ) {
     }
 
@@ -24,9 +26,12 @@ public record PortfolioDtos() {
             BigDecimal quantity,
             BigDecimal averagePrice,
             BigDecimal lastPrice,
+            BigDecimal closePrice,
             BigDecimal investedValue,
             BigDecimal marketValue,
             BigDecimal unrealizedPnl,
-            BigDecimal unrealizedPnlPercent) {
+            BigDecimal unrealizedPnlPercent,
+            BigDecimal todayPnl,
+            BigDecimal todayPnlPercent) {
     }
 }

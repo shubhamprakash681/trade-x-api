@@ -37,6 +37,10 @@ public class UserNotification {
     @Column(name = "alert_id")
     private Long alertId;
 
+    @Builder.Default
+    @Column(name = "read_status", nullable = false)
+    private boolean readStatus = false;
+
     @CreationTimestamp
     @Column(nullable = false, name = "created_at")
     private LocalDateTime createdAt;

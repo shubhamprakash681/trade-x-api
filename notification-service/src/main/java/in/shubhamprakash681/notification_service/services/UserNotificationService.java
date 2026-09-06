@@ -7,8 +7,10 @@ import in.shubhamprakash681.notification_service.entity.UserNotification;
 import in.shubhamprakash681.notification_service.repositories.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -28,6 +30,26 @@ public class UserNotificationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public NotificationDtos.UnreadCountResponse unreadCount(JwtPrincipal principal) {
+        return new NotificationDtos.UnreadCountResponse(
+                userNotificationRepository.countByUserIdAndReadStatusFalse(principal.userId()));
+    }
+
+    @Transactional
+    public NotificationDtos.NotificationResponse markAsRead(JwtPrincipal principal, Long notificationId) {
+        UserNotification notification = userNotificationRepository.findByIdAndUserId(notificationId, principal.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
+
+        notification.setReadStatus(true);
+        return toResponse(notification);
+    }
+
+    @Transactional
+    public void markAllAsRead(JwtPrincipal principal) {
+        userNotificationRepository.markAllAsRead(principal.userId());
+    }
+
     private NotificationDtos.NotificationResponse toResponse(UserNotification notification) {
         return new NotificationDtos.NotificationResponse(
                 notification.getId(),
@@ -35,6 +57,8 @@ public class UserNotificationService {
                 notification.getTitle(),
                 notification.getMessage(),
                 notification.getAlertId(),
+                notification.isReadStatus(),
                 notification.getCreatedAt());
     }
 }
+
