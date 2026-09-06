@@ -98,31 +98,31 @@ chmod 600 .env
 
 ---
 
-## 5. First-Time SSL Certificate Setup (Let's Encrypt / Certbot)
+## 5. Automated SSL Certificate Management (Let's Encrypt / Certbot)
 
-Nginx is preconfigured with dual bootstrap/production templates. On initial deployment before certificates are generated, Nginx runs in HTTP-only mode.
+The GitHub Actions workflow now automatically handles SSL generation and renewal based on [INFO.txt](file:///home/shubham/Dev/java_projects/trade-x/trade-x-api/INFO.txt):
 
-1. **Start the stack to allow Let's Encrypt challenge verification**:
-   ```bash
-   docker compose -f docker-compose-prod.yml up -d --build
-   ```
+1. **Initial Deployment (No SSL cert exists)**:
+   - When the stack first boots, Nginx starts in HTTP bootstrap mode on port 80.
+   - The workflow checks if `/etc/letsencrypt/live/api.tradex.shubhamprakash681.in/fullchain.pem` exists inside the `certbot-etc` volume.
+   - If not found, it automatically executes:
+     ```bash
+     docker compose -f docker-compose-prod.yml run --rm certbot certonly \
+       --webroot \
+       --webroot-path=/var/www/certbot \
+       --email shubhamprakash444@gmail.com \
+       --agree-tos \
+       --no-eff-email \
+       -d api.tradex.shubhamprakash681.in \
+       -d www.api.tradex.shubhamprakash681.in
+     ```
+   - Automatically reloads Nginx with `docker compose -f docker-compose-prod.yml up -d --force-recreate nginx` so `docker-entrypoint.sh` loads `tradex.production.conf` (HTTPS).
 
-2. **Issue SSL certificate via Certbot**:
-   ```bash
-   docker compose -f docker-compose-prod.yml run --rm certbot certonly \
-     --webroot \
-     --webroot-path=/var/www/certbot \
-     --email your-email@example.com \
-     --agree-tos \
-     --no-eff-email \
-     -d api.tradex.shubhamprakash681.in \
-     -d www.api.tradex.shubhamprakash681.in
-   ```
+2. **Subsequent Deployments**:
+   - The workflow detects the existing certificate and runs `certbot renew` to check if renewal is needed without hitting Let's Encrypt rate limits.
 
-3. **Recreate Nginx to switch to SSL configuration**:
-   ```bash
-   docker compose -f docker-compose-prod.yml up -d --force-recreate nginx
-   ```
+3. **Manual Trigger (`manage_ssl`)**:
+   - In GitHub Actions UI, you can trigger a manual run with `manage_ssl: true` to force Certbot certificate check/renewal.
 
 ---
 
@@ -130,8 +130,9 @@ Nginx is preconfigured with dual bootstrap/production templates. On initial depl
 
 Every push to `main` automatically:
 1. Connects securely via SSH with keepalive flags (`ServerAliveInterval=60`).
-2. Syncs `.env` (if `PROD_ENV_FILE` secret is provided).
+2. Syncs `.env` (if `PROD_ENV_FILE` secret is configured).
 3. Fetches latest code and resets git state to `origin/main`.
 4. Executes `docker compose -f docker-compose-prod.yml up -d --build --remove-orphans`.
-5. Prunes old/dangling container images (`docker image prune -f`).
-6. Prints a status overview of all running containers.
+5. Checks and issues/renews SSL certificates via Certbot and switches Nginx to HTTPS.
+6. Prunes dangling container images (`docker image prune -f`).
+7. Outputs container status table.

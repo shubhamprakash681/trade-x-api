@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      manage_ssl:
+        description: "Request or renew SSL certificates via Certbot"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: production_deployment
@@ -80,9 +85,11 @@ jobs:
           DEPLOY_PATH: ${{ vars.OCI_DEPLOY_PATH || secrets.OCI_DEPLOY_PATH || '~/trade-x-api' }}
           TARGET_SERVICE: ${{ inputs.service || 'all' }}
           NO_CACHE: ${{ inputs.no_cache || false }}
+          MANAGE_SSL: ${{ inputs.manage_ssl || false }}
+          SSL_EMAIL: ${{ vars.SSL_EMAIL || secrets.SSL_EMAIL || 'shubhamprakash444@gmail.com' }}
         run: |
           ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=30 -p "$PORT" "$USERNAME@$HOST" \
-            "DEPLOY_PATH='$DEPLOY_PATH' TARGET_SERVICE='$TARGET_SERVICE' NO_CACHE='$NO_CACHE' bash -s" << 'EOF'
+            "DEPLOY_PATH='$DEPLOY_PATH' TARGET_SERVICE='$TARGET_SERVICE' NO_CACHE='$NO_CACHE' MANAGE_SSL='$MANAGE_SSL' SSL_EMAIL='$SSL_EMAIL' bash -s" << 'EOF'
             set -eo pipefail
 
             # Expand tilde if present
@@ -127,6 +134,30 @@ jobs:
             else
               echo "==> Deploying all services using docker-compose-prod.yml..."
               docker compose -f docker-compose-prod.yml up -d --build $BUILD_FLAGS --remove-orphans
+            fi
+
+            # ========================================================
+            # SSL Certificate Management (Certbot)
+            # ========================================================
+            CERT_PATH="/etc/letsencrypt/live/api.tradex.shubhamprakash681.in/fullchain.pem"
+            CERT_EXISTS=$(docker compose -f docker-compose-prod.yml run --rm --entrypoint "" certbot sh -c "[ -f '$CERT_PATH' ] && echo 'yes' || echo 'no'" 2>/dev/null || echo "no")
+
+            if [ "$CERT_EXISTS" != "yes" ] || [ "$MANAGE_SSL" = "true" ]; then
+              echo "==> Certificate fullchain.pem not found or manage_ssl requested. Requesting SSL certificate with Certbot..."
+              docker compose -f docker-compose-prod.yml run --rm certbot certonly \
+                --webroot \
+                --webroot-path=/var/www/certbot \
+                --email "${SSL_EMAIL:-shubhamprakash444@gmail.com}" \
+                --agree-tos \
+                --no-eff-email \
+                -d api.tradex.shubhamprakash681.in \
+                -d www.api.tradex.shubhamprakash681.in
+
+              echo "==> Reloading Nginx to switch to HTTPS configuration..."
+              docker compose -f docker-compose-prod.yml up -d --force-recreate nginx
+            else
+              echo "==> Existing SSL certificate found. Checking renewal status..."
+              docker compose -f docker-compose-prod.yml run --rm certbot renew || true
             fi
 
             echo "==> Cleaning up dangling images..."
