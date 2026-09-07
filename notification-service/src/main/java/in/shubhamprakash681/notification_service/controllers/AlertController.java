@@ -18,20 +18,20 @@ public class AlertController {
     private final AlertService alertService;
 
     @GetMapping
-    List<AlertDtos.AlertResponse> alerts(@AuthenticationPrincipal JwtPrincipal principal) {
+    public List<AlertDtos.AlertResponse> alerts(@AuthenticationPrincipal JwtPrincipal principal) {
         return alertService.alerts(principal);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    AlertDtos.AlertResponse create(@AuthenticationPrincipal JwtPrincipal principal,
+    public AlertDtos.AlertResponse create(@AuthenticationPrincipal JwtPrincipal principal,
             @Valid @RequestBody AlertDtos.CreateAlertRequest request) {
         return alertService.create(principal, request);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@AuthenticationPrincipal JwtPrincipal principal,
+    public void delete(@AuthenticationPrincipal JwtPrincipal principal,
             @RequestParam(required = false) Long id,
             @RequestParam(required = false) String symbol) {
         alertService.delete(principal, id, symbol);

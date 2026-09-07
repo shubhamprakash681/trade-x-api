@@ -16,7 +16,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping
-    DashboardDtos.DashboardResponse dashboard(@AuthenticationPrincipal JwtPrincipal principal) {
+    public DashboardDtos.DashboardResponse dashboard(@AuthenticationPrincipal JwtPrincipal principal) {
         return dashboardService.dashboard(principal);
     }
 }

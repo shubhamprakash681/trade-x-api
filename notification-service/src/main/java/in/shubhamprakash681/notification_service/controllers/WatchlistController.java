@@ -18,20 +18,20 @@ public class WatchlistController {
     private final WatchlistService watchlistService;
 
     @GetMapping
-    List<WatchlistDtos.WatchlistResponse> watchlist(@AuthenticationPrincipal JwtPrincipal principal) {
+    public List<WatchlistDtos.WatchlistResponse> watchlist(@AuthenticationPrincipal JwtPrincipal principal) {
         return watchlistService.watchlist(principal);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    WatchlistDtos.WatchlistResponse add(@AuthenticationPrincipal JwtPrincipal principal,
+    public WatchlistDtos.WatchlistResponse add(@AuthenticationPrincipal JwtPrincipal principal,
             @Valid @RequestBody WatchlistDtos.AddWatchlistRequest request) {
         return watchlistService.add(principal, request);
     }
 
     @DeleteMapping("/{symbol}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void remove(@AuthenticationPrincipal JwtPrincipal principal, @PathVariable String symbol) {
+    public void remove(@AuthenticationPrincipal JwtPrincipal principal, @PathVariable String symbol) {
         watchlistService.remove(principal, symbol);
     }
 }

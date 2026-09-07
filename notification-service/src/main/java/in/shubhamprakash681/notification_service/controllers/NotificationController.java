@@ -17,26 +17,26 @@ public class NotificationController {
     private final UserNotificationService userNotificationService;
 
     @GetMapping
-    List<NotificationDtos.NotificationResponse> notifications(
+    public List<NotificationDtos.NotificationResponse> notifications(
             @AuthenticationPrincipal JwtPrincipal principal,
             @RequestParam(defaultValue = "100") int limit) {
         return userNotificationService.notifications(principal, limit);
     }
 
     @GetMapping("/unread-count")
-    NotificationDtos.UnreadCountResponse unreadCount(@AuthenticationPrincipal JwtPrincipal principal) {
+    public NotificationDtos.UnreadCountResponse unreadCount(@AuthenticationPrincipal JwtPrincipal principal) {
         return userNotificationService.unreadCount(principal);
     }
 
     @PatchMapping("/{id}/read")
-    NotificationDtos.NotificationResponse markAsRead(@AuthenticationPrincipal JwtPrincipal principal,
+    public NotificationDtos.NotificationResponse markAsRead(@AuthenticationPrincipal JwtPrincipal principal,
             @PathVariable Long id) {
         return userNotificationService.markAsRead(principal, id);
     }
 
     @PostMapping("/read-all")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void markAllAsRead(@AuthenticationPrincipal JwtPrincipal principal) {
+    public void markAllAsRead(@AuthenticationPrincipal JwtPrincipal principal) {
         userNotificationService.markAllAsRead(principal);
     }
 }
