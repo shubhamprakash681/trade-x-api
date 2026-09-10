@@ -1,6 +1,5 @@
 package in.shubhamprakash681.api_gateway;
 
-
 import in.shubhamprakash681.common_lib.security.JwtTokenService;
 import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.NonNull;
@@ -46,6 +45,12 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
             "/notifications/v3/api-docs",
             "/ws");
 
+    private static final List<String> PUBLIC_EXACT_PATHS = List.of(
+            "/api/stocks",
+            "/api/stocks/",
+            "/api/prices/latest",
+            "/api/prices/latest/");
+
     private final JwtTokenService jwtTokenService;
 
     public JwtGatewayFilter(JwtTokenService jwtTokenService) {
@@ -53,7 +58,7 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublic(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+        return PUBLIC_EXACT_PATHS.contains(path) || PUBLIC_PATHS.stream().anyMatch(path::startsWith);
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {
@@ -78,7 +83,8 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
         });
 
         String path = exchange.getRequest().getURI().getPath();
-        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS || isPublic(path)) return chain.filter(exchange);
+        if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS || isPublic(path))
+            return chain.filter(exchange);
 
         String authorization = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authorization == null || !authorization.startsWith("Bearer "))

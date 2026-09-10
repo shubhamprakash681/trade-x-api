@@ -47,8 +47,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/actuator/health/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/stocks").permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenService),
+                        UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -74,14 +76,16 @@ public class SecurityConfig {
         }
 
         @Override
-        protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
+        protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response,
+                @NonNull FilterChain filterChain)
                 throws ServletException, IOException {
             String header = request.getHeader(HttpHeaders.AUTHORIZATION);
             if (header != null && header.startsWith("Bearer ")) {
                 try {
                     JwtPrincipal principal = jwtTokenService.parse(header.substring(7));
                     var authorities = principal.roles().stream().map(SimpleGrantedAuthority::new).toList();
-                    var authentication = new UsernamePasswordAuthenticationToken(principal, header.substring(7), authorities);
+                    var authentication = new UsernamePasswordAuthenticationToken(principal, header.substring(7),
+                            authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 } catch (RuntimeException ignored) {
                     SecurityContextHolder.clearContext();
