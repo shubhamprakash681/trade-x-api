@@ -41,12 +41,20 @@ public class PriceGeneratorService {
     }
 
     private PriceTick nextTick(String symbol) {
+        BigDecimal basePrice = seedPriceCatalog.basePrice(symbol);
         BigDecimal previousPrice = priceCacheService.get(symbol)
                 .map(PriceTick::price)
-                .orElse(seedPriceCatalog.basePrice(symbol))
+                .orElse(basePrice)
                 .setScale(4, RoundingMode.HALF_UP);
 
-        BigDecimal movePercent = BigDecimal.valueOf((random.nextDouble() - 0.5) * 1.4)
+        // Mean reversion towards base price (Ornstein-Uhlenbeck drift):
+        // Pull back towards basePrice proportional to the relative deviation
+        double distanceRatio = basePrice.subtract(previousPrice).doubleValue() / Math.max(1.0, basePrice.doubleValue());
+        double reversionPercent = distanceRatio * 0.4; // 0.4% restorative pull per step
+
+        // Realistic intraday random tick noise: ~ +-0.15% per 2-second step
+        double randomPercent = (random.nextDouble() - 0.5) * 0.3;
+        BigDecimal movePercent = BigDecimal.valueOf(reversionPercent + randomPercent)
                 .setScale(4, RoundingMode.HALF_UP);
 
         BigDecimal changeAmount = previousPrice.multiply(movePercent)

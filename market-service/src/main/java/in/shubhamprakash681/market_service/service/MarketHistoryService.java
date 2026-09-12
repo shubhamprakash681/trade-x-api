@@ -123,7 +123,7 @@ public class MarketHistoryService {
     }
 
     public MarketDtos.MarketStatusResponse regenerateMissingHistory() {
-        historicalMarketDataSeeder.seedMissingHistory();
+        historicalMarketDataSeeder.forceReseed();
         return status();
     }
 

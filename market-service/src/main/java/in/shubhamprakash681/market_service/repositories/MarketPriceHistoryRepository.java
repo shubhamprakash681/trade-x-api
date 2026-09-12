@@ -27,6 +27,8 @@ public interface MarketPriceHistoryRepository extends JpaRepository<MarketPriceH
                                                       LocalDateTime startTime,
                                                       LocalDateTime endTime);
 
+    boolean existsBySymbolAndIntervalAndCandleTime(String symbol, String interval, LocalDateTime candleTime);
+
     Optional<MarketPriceHistory> findFirstBySymbolAndIntervalOrderByCandleTimeAsc(String symbol, String interval);
 
     @Query("select h.candleTime from MarketPriceHistory h where h.symbol = :symbol and h.interval = :interval and h.candleTime between :startTime and :endTime")
@@ -48,4 +50,9 @@ public interface MarketPriceHistoryRepository extends JpaRepository<MarketPriceH
             """)
     List<MarketPriceHistory> findLatestForSymbols(@Param("symbols") Collection<String> symbols,
                                                   @Param("interval") String interval);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query("delete from MarketPriceHistory h where h.symbol = :symbol and h.interval = :interval")
+    void deleteBySymbolAndInterval(@Param("symbol") String symbol, @Param("interval") String interval);
 }
