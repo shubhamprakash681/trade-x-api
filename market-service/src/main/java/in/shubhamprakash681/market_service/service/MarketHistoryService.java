@@ -13,12 +13,16 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -32,26 +36,117 @@ public class MarketHistoryService {
     private final MarketHistoryProperties properties;
     private final HistoricalMarketDataSeeder historicalMarketDataSeeder;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<MarketDtos.CandleResponse> history(String symbol, LocalDate from, LocalDate to) {
+        String fromStr = from != null ? from.toString() : null;
+        String toStr = to != null ? to.toString() : null;
+        return history(symbol, null, null, fromStr, toStr);
+    }
+
+    @Transactional
+    public List<MarketDtos.CandleResponse> history(String symbol, String intervalParam, String rangeParam, String fromParam, String toParam) {
         String normalized = normalizeSupportedSymbol(symbol);
+        MarketHistoryProperties.Interval targetInterval = MarketHistoryProperties.parseInterval(intervalParam);
+        if (targetInterval == null) {
+            targetInterval = properties.getInterval();
+        }
+
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime endTime = to == null
-                ? properties.endTime(now)
-                : properties.endTime(to.atTime(LocalTime.MAX));
-        LocalDateTime startTime = from == null
-                ? properties.startTime(now)
-                : from.atStartOfDay();
+        LocalDateTime endTime;
+        LocalDateTime startTime;
+
+        LocalDateTime parsedTo = parseDateTimeOrDate(toParam, true);
+        LocalDateTime parsedFrom = parseDateTimeOrDate(fromParam, false);
+
+        if (parsedTo != null) {
+            endTime = properties.endTime(targetInterval, parsedTo);
+        } else {
+            endTime = properties.endTime(targetInterval, now);
+        }
+
+        if (parsedFrom != null) {
+            startTime = properties.startTime(targetInterval, parsedFrom);
+        } else if (rangeParam != null && !rangeParam.isBlank()) {
+            startTime = calculateStartTimeFromRange(rangeParam.trim().toUpperCase(), now, targetInterval);
+        } else {
+            startTime = properties.startTime(targetInterval, now);
+        }
+
+        startTime = targetInterval.normalizeStart(startTime);
+        endTime = targetInterval.normalizeEnd(endTime);
 
         if (startTime.isAfter(endTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "from must be before or equal to to");
         }
 
-        return marketPriceHistoryRepository
-                .findBySymbolAndIntervalAndCandleTimeBetweenOrderByCandleTimeAsc(normalized, properties.getInterval().name(), startTime, endTime)
-                .stream()
+        long expected = MarketHistoryProperties.expectedCandleCount(targetInterval, startTime, endTime);
+        long count = marketPriceHistoryRepository.countBySymbolAndIntervalAndCandleTimeBetween(
+                normalized, targetInterval.name(), startTime, endTime);
+
+        Optional<MarketPriceHistory> oldestCandle = marketPriceHistoryRepository
+                .findFirstBySymbolAndIntervalOrderByCandleTimeAsc(normalized, targetInterval.name());
+
+        boolean needsSeeding = false;
+        if (count == 0 || oldestCandle.isEmpty()) {
+            needsSeeding = true;
+        } else if (oldestCandle.get().getCandleTime().isAfter(startTime)) {
+            // Existing data does not reach far back enough to cover startTime (e.g. 5Y requested, but DB only has 1Y)
+            needsSeeding = true;
+        } else if (count < expected * 0.8) {
+            needsSeeding = true;
+        }
+
+        if (needsSeeding) {
+            LocalDateTime fullStart = properties.startTime(targetInterval, now);
+            LocalDateTime seedStart = startTime.isBefore(fullStart) ? startTime : fullStart;
+            historicalMarketDataSeeder.seedStockHistory(normalized, targetInterval, seedStart, endTime);
+        }
+
+        List<MarketPriceHistory> candles = marketPriceHistoryRepository
+                .findBySymbolAndIntervalAndCandleTimeBetweenOrderByCandleTimeAsc(
+                        normalized, targetInterval.name(), startTime, endTime);
+
+        if (candles.size() > 5000) {
+            candles = candles.subList(candles.size() - 5000, candles.size());
+        }
+
+        return candles.stream()
                 .map(this::toCandleResponse)
                 .toList();
+    }
+
+    private LocalDateTime calculateStartTimeFromRange(String range, LocalDateTime now, MarketHistoryProperties.Interval interval) {
+        return switch (range) {
+            case "1D" -> now.minusDays(1);
+            case "5D" -> now.minusDays(5);
+            case "1M" -> now.minusMonths(1);
+            case "3M" -> now.minusMonths(3);
+            case "6M" -> now.minusMonths(6);
+            case "YTD" -> LocalDate.of(now.getYear(), 1, 1).atStartOfDay();
+            case "1Y" -> now.minusYears(1);
+            case "5Y" -> now.minusYears(5);
+            case "ALL" -> now.minusYears(10);
+            default -> properties.startTime(interval, now);
+        };
+    }
+
+    private LocalDateTime parseDateTimeOrDate(String val, boolean isEnd) {
+        if (val == null || val.isBlank()) {
+            return null;
+        }
+        String s = val.trim();
+        if (s.matches("^\\d+$")) {
+            long num = Long.parseLong(s);
+            Instant instant = num > 10_000_000_000L
+                    ? Instant.ofEpochMilli(num)
+                    : Instant.ofEpochSecond(num);
+            return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        }
+        if (s.length() == 10) {
+            LocalDate date = LocalDate.parse(s);
+            return isEnd ? date.atTime(LocalTime.MAX) : date.atStartOfDay();
+        }
+        return LocalDateTime.parse(s, DateTimeFormatter.ISO_DATE_TIME);
     }
 
     @Transactional(readOnly = true)

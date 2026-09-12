@@ -17,9 +17,11 @@ public class MarketController {
     @GetMapping("/api/market/history/{symbol}")
     List<MarketDtos.CandleResponse> history(
             @PathVariable String symbol,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return marketHistoryService.history(symbol, from, to);
+            @RequestParam(required = false) String interval,
+            @RequestParam(required = false) String range,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        return marketHistoryService.history(symbol, interval, range, from, to);
     }
 
     @GetMapping("/api/market/candle/{symbol}")

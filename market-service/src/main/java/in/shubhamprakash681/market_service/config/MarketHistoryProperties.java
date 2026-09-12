@@ -38,42 +38,56 @@ public class MarketHistoryProperties {
     }
 
     public LocalDateTime startTime(LocalDateTime now) {
+        return startTime(this.interval, now);
+    }
+
+    public LocalDateTime startTime(Interval targetInterval, LocalDateTime now) {
+        Interval effectiveInterval = targetInterval != null ? targetInterval : this.interval;
         if (startDateTime != null) {
-            return interval.normalizeStart(startDateTime);
+            return effectiveInterval.normalizeStart(startDateTime);
         }
         if (startDate != null) {
             return startDate.atStartOfDay();
         }
         if (seconds != null) {
-            return interval.normalizeStart(now.minusSeconds(seconds));
+            return effectiveInterval.normalizeStart(now.minusSeconds(seconds));
         }
         if (minutes != null) {
-            return interval.normalizeStart(now.minusMinutes(minutes));
+            return effectiveInterval.normalizeStart(now.minusMinutes(minutes));
         }
         if (hours != null) {
-            return interval.normalizeStart(now.minusHours(hours));
+            return effectiveInterval.normalizeStart(now.minusHours(hours));
         }
         if (days != null) {
-            return interval.normalizeStart(now.minusDays(days));
+            return effectiveInterval.normalizeStart(now.minusDays(days));
         }
-        return switch (interval) {
-            case SECONDS -> interval.normalizeStart(now.minusHours(1));
-            case MINUTE -> interval.normalizeStart(now.minusDays(1));
-            case HOURLY -> interval.normalizeStart(now.minusDays(30));
+        return switch (effectiveInterval) {
+            case SECONDS -> effectiveInterval.normalizeStart(now.minusHours(1));
+            case MINUTE -> effectiveInterval.normalizeStart(now.minusDays(7));
+            case HOURLY -> effectiveInterval.normalizeStart(now.minusDays(60));
             case DAILY, WEEKLY, MONTHLY -> now.toLocalDate().minusYears(years).atStartOfDay();
         };
     }
 
     public LocalDateTime endTime(LocalDateTime now) {
-        return interval.normalizeEnd(now);
+        return endTime(this.interval, now);
+    }
+
+    public LocalDateTime endTime(Interval targetInterval, LocalDateTime now) {
+        Interval effectiveInterval = targetInterval != null ? targetInterval : this.interval;
+        return effectiveInterval.normalizeEnd(now);
     }
 
     public long expectedCandleCount(LocalDateTime startTime, LocalDateTime endTime) {
+        return expectedCandleCount(this.interval, startTime, endTime);
+    }
+
+    public static long expectedCandleCount(Interval targetInterval, LocalDateTime startTime, LocalDateTime endTime) {
         if (startTime.isAfter(endTime)) {
             return 0;
         }
 
-        long count = switch (interval) {
+        long count = switch (targetInterval) {
             case SECONDS -> ChronoUnit.SECONDS.between(startTime, endTime);
             case MINUTE -> ChronoUnit.MINUTES.between(startTime, endTime);
             case HOURLY -> ChronoUnit.HOURS.between(startTime, endTime);
@@ -82,11 +96,41 @@ public class MarketHistoryProperties {
             case MONTHLY -> ChronoUnit.MONTHS.between(startTime, endTime);
         } + 1;
 
-        if (!interval.isAligned(startTime, endTime)) {
+        if (!targetInterval.isAligned(startTime, endTime)) {
             count++;
         }
 
         return count;
+    }
+
+    public static Interval parseInterval(String intervalStr) {
+        if (intervalStr == null || intervalStr.isBlank()) {
+            return null;
+        }
+        String trimmed = intervalStr.trim();
+        // Exact case checks for standard TradingView codes:
+        if (trimmed.equals("1m") || trimmed.equals("m")) {
+            return Interval.MINUTE;
+        }
+        if (trimmed.equals("1M") || trimmed.equals("M")) {
+            return Interval.MONTHLY;
+        }
+        String upper = trimmed.toUpperCase();
+        return switch (upper) {
+            case "1S", "S", "SEC", "SECOND", "SECONDS" -> Interval.SECONDS;
+            case "MIN", "MINUTE", "MINUTES" -> Interval.MINUTE;
+            case "1H", "H", "HR", "HOUR", "HOURLY" -> Interval.HOURLY;
+            case "1D", "D", "DAY", "DAILY" -> Interval.DAILY;
+            case "1W", "W", "WEEK", "WEEKLY" -> Interval.WEEKLY;
+            case "1MO", "MO", "MONTH", "MONTHLY" -> Interval.MONTHLY;
+            default -> {
+                try {
+                    yield Interval.valueOf(upper);
+                } catch (IllegalArgumentException e) {
+                    yield null;
+                }
+            }
+        };
     }
 
     public enum Interval {

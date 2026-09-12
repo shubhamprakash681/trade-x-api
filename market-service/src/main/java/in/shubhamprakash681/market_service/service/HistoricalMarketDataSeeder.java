@@ -72,6 +72,15 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         for (SupportedStockCatalog.StockSeed stock : supportedStockCatalog.stocks()) {
             seedMissingHistory(stock, interval, startTime, endTime);
         }
+
+        // Also pre-seed DAILY history (10 years) for all stocks so charts load instantly
+        if (properties.getInterval() != MarketHistoryProperties.Interval.DAILY) {
+            LocalDateTime dailyStart = properties.startTime(MarketHistoryProperties.Interval.DAILY, now);
+            LocalDateTime dailyEnd = properties.endTime(MarketHistoryProperties.Interval.DAILY, now);
+            for (SupportedStockCatalog.StockSeed stock : supportedStockCatalog.stocks()) {
+                seedMissingHistory(stock, MarketHistoryProperties.Interval.DAILY.name(), dailyStart, dailyEnd);
+            }
+        }
     }
 
     @Scheduled(fixedDelayString = "${tradex.market.history.generation-delay-ms:1000}")
@@ -162,12 +171,24 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         }
     }
 
-    private void seedMissingHistory(SupportedStockCatalog.StockSeed stock,
-                                    String interval,
-                                    LocalDateTime startTime,
-                                    LocalDateTime endTime) {
+    public void seedStockHistory(String symbol, MarketHistoryProperties.Interval interval, LocalDateTime startTime, LocalDateTime endTime) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            supportedStockCatalog.findBySymbol(symbol).ifPresent(stock -> {
+                seedMissingHistory(stock, interval.name(), startTime, endTime);
+            });
+        });
+    }
+
+    public void seedMissingHistory(SupportedStockCatalog.StockSeed stock,
+                                   String interval,
+                                   LocalDateTime startTime,
+                                   LocalDateTime endTime) {
         BigDecimal targetPrice = livePriceService.getLivePrice(stock.symbol(), stock.referencePrice());
-        long expected = properties.expectedCandleCount(startTime, endTime);
+        MarketHistoryProperties.Interval targetInterval = MarketHistoryProperties.parseInterval(interval);
+        if (targetInterval == null) {
+            targetInterval = properties.getInterval();
+        }
+        long expected = MarketHistoryProperties.expectedCandleCount(targetInterval, startTime, endTime);
         long existingCount = marketPriceHistoryRepository.countBySymbolAndIntervalAndCandleTimeBetween(stock.symbol(), interval, startTime, endTime);
 
         Optional<MarketPriceHistory> latestCandle = marketPriceHistoryRepository.findFirstBySymbolAndIntervalOrderByCandleTimeDesc(stock.symbol(), interval);
@@ -177,9 +198,9 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         if (latestCandle.isPresent()) {
             BigDecimal latestClose = latestCandle.get().getClosePrice();
             double ratio = latestClose.divide(targetPrice, 4, RoundingMode.HALF_UP).doubleValue();
-            if (properties.getInterval() == MarketHistoryProperties.Interval.SECONDS && (ratio < 0.95 || ratio > 1.05)) {
+            if (targetInterval == MarketHistoryProperties.Interval.SECONDS && (ratio < 0.95 || ratio > 1.05)) {
                 diverged = true;
-            } else if (properties.getInterval() == MarketHistoryProperties.Interval.MINUTE && (ratio < 0.90 || ratio > 1.10)) {
+            } else if (targetInterval == MarketHistoryProperties.Interval.MINUTE && (ratio < 0.90 || ratio > 1.10)) {
                 diverged = true;
             } else if (ratio < 0.60 || ratio > 1.50) {
                 diverged = true;
@@ -188,9 +209,9 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         if (!diverged && oldestCandle.isPresent()) {
             BigDecimal oldestClose = oldestCandle.get().getClosePrice();
             double oldestRatio = oldestClose.divide(targetPrice, 4, RoundingMode.HALF_UP).doubleValue();
-            if (properties.getInterval() == MarketHistoryProperties.Interval.SECONDS && (oldestRatio < 0.90 || oldestRatio > 1.10)) {
+            if (targetInterval == MarketHistoryProperties.Interval.SECONDS && (oldestRatio < 0.90 || oldestRatio > 1.10)) {
                 diverged = true;
-            } else if (properties.getInterval() == MarketHistoryProperties.Interval.MINUTE && (oldestRatio < 0.85 || oldestRatio > 1.15)) {
+            } else if (targetInterval == MarketHistoryProperties.Interval.MINUTE && (oldestRatio < 0.85 || oldestRatio > 1.15)) {
                 diverged = true;
             }
         }
@@ -210,10 +231,21 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
             return;
         }
 
-        Set<LocalDateTime> existingTimes = marketPriceHistoryRepository.findExistingTimes(stock.symbol(), interval, startTime, endTime);
+        if (existingCount > 0 && existingCount < expected) {
+            // Existing history is partial. Purge it to generate a continuous, consistent history sequence across the full window
+            marketPriceHistoryRepository.deleteBySymbolAndInterval(stock.symbol(), interval);
+            marketPriceHistoryRepository.flush();
+            if (entityManager != null) {
+                entityManager.clear();
+            }
+            existingCount = 0;
+        }
+
+        Set<LocalDateTime> existingTimes = existingCount == 0 ? java.util.Collections.emptySet()
+                : marketPriceHistoryRepository.findExistingTimes(stock.symbol(), interval, startTime, endTime);
         List<MarketPriceHistory> pending = new ArrayList<>(BATCH_SIZE);
 
-        BigDecimal startRatio = switch (properties.getInterval()) {
+        BigDecimal startRatio = switch (targetInterval) {
             case SECONDS -> new BigDecimal("0.9980");
             case MINUTE -> new BigDecimal("0.9900");
             case HOURLY -> new BigDecimal("0.9500");
@@ -229,7 +261,7 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         while (!candleTime.isAfter(endTime)) {
             GeneratedCandle candle = nextCandle(stock, candleTime.toLocalDate(),
                     ChronoUnit.DAYS.between(startTime.toLocalDate(), candleTime.toLocalDate()),
-                    previousClose, targetPrice, remainingSteps, random, properties.getInterval());
+                    previousClose, targetPrice, remainingSteps, random, targetInterval);
             previousClose = candle.close();
             remainingSteps--;
 
@@ -255,13 +287,13 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
             }
 
             lastCandleTime = candleTime;
-            candleTime = properties.getInterval().next(candleTime);
+            candleTime = targetInterval.next(candleTime);
         }
 
         if (lastCandleTime != null && !lastCandleTime.equals(endTime)) {
             GeneratedCandle candle = nextCandle(stock, endTime.toLocalDate(),
                     ChronoUnit.DAYS.between(startTime.toLocalDate(), endTime.toLocalDate()),
-                    previousClose, targetPrice, 1, random, properties.getInterval());
+                    previousClose, targetPrice, 1, random, targetInterval);
             if (!existingTimes.contains(endTime)) {
                 pending.add(new MarketPriceHistory(
                         stock.symbol(),
