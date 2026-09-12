@@ -35,18 +35,17 @@ public class MarketHistoryService {
     @Transactional(readOnly = true)
     public List<MarketDtos.CandleResponse> history(String symbol, LocalDate from, LocalDate to) {
         String normalized = normalizeSupportedSymbol(symbol);
-        LocalDate today = LocalDate.now();
-        LocalDate endDate = to == null ? today : to;
-        LocalDate startDate = from == null ? properties.startDate(endDate) : from;
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime endTime = to == null
+                ? properties.endTime(now)
+                : properties.endTime(to.atTime(LocalTime.MAX));
+        LocalDateTime startTime = from == null
+                ? properties.startTime(now)
+                : from.atStartOfDay();
 
-        if (startDate.isAfter(endDate)) {
+        if (startTime.isAfter(endTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "from must be before or equal to to");
         }
-
-        LocalDateTime startTime = startDate.atStartOfDay();
-        LocalDateTime endTime = endDate.equals(today)
-                ? properties.endTime(LocalDateTime.now())
-                : properties.endTime(endDate.atTime(LocalTime.MAX));
 
         return marketPriceHistoryRepository
                 .findBySymbolAndIntervalAndCandleTimeBetweenOrderByCandleTimeAsc(normalized, properties.getInterval().name(), startTime, endTime)
@@ -98,9 +97,9 @@ public class MarketHistoryService {
 
     @Transactional(readOnly = true)
     public MarketDtos.MarketStatusResponse status() {
-        LocalDate today = LocalDate.now();
-        LocalDateTime startTime = properties.startTime(today);
-        LocalDateTime endTime = properties.endTime(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startTime = properties.startTime(now);
+        LocalDateTime endTime = properties.endTime(now);
         long expectedCandles = properties.expectedCandleCount(startTime, endTime);
         String interval = properties.getInterval().name();
 

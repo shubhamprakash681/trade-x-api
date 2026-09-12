@@ -25,7 +25,8 @@ tradex:
     topic: ${TRADEX_PRICE_TOPIC:tradex.market.prices}
     history:
       years: ${TRADEX_MARKET_HISTORY_YEARS:10}
-      interval: ${TRADEX_MARKET_HISTORY_INTERVAL:DAILY}
+      interval: ${TRADEX_MARKET_HISTORY_INTERVAL:SECONDS}
+      generation-delay-ms: ${TRADEX_MARKET_GENERATION_DELAY_MS:1000}
 
 springdoc:
   packages-to-scan: in.shubhamprakash681.market_service.controllers

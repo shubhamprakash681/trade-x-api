@@ -13,6 +13,14 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
 
+tradex:
+  market:
+    topic: ${TRADEX_PRICE_TOPIC:tradex.market.prices}
+    history:
+      years: ${TRADEX_MARKET_HISTORY_YEARS:10}
+      interval: ${TRADEX_MARKET_HISTORY_INTERVAL:SECONDS}
+      generation-delay-ms: ${TRADEX_MARKET_GENERATION_DELAY_MS:1000}
+
 springdoc:
   swagger-ui:
     enabled: false

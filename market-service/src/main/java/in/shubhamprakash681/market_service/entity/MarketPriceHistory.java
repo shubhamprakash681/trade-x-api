@@ -13,11 +13,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "market_price_candles",
-        uniqueConstraints = @UniqueConstraint(name = "uk_market_price_candles_symbol_interval_time", columnNames = {"symbol", "candle_interval", "candle_time"}),
+@Table(name = "market_price_candles_history",
+        uniqueConstraints = @UniqueConstraint(name = "uk_market_price_candles_hist_sym_int_time", columnNames = {"symbol", "candle_interval", "candle_time"}),
         indexes = {
-                @Index(name = "idx_market_price_candles_symbol_interval_time", columnList = "symbol,candle_interval,candle_time"),
-                @Index(name = "idx_market_price_candles_time", columnList = "candle_time")
+                @Index(name = "idx_market_price_candles_hist_sym_int_time", columnList = "symbol,candle_interval,candle_time"),
+                @Index(name = "idx_market_price_candles_hist_time", columnList = "candle_time")
         })
 public class MarketPriceHistory {
         @Id
