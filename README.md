@@ -229,13 +229,17 @@ Create a deterministic market data generation engine.
 
 ### Features
 - Generate 10 years of historical data
-- Generate OHLCV candles
-- Generate realistic market trends
-- Startup validation
-- Automatic regeneration of missing dates
+- Multi-interval support: `SECONDS`, `MINUTE`, `HOURLY`, `DAILY`, `WEEKLY`, `MONTHLY` (TradingView codes: `1s`, `1m`, `1h`, `D`, `W`, `M`)
+- Dynamic range presets: `1D`, `5D`, `1M`, `3M`, `6M`, `YTD`, `1Y`, `5Y`, `ALL`
+- Custom calendar date range queries (`from`, `to`)
+- Generate realistic OHLCV candles and trading volume
+- Ongoing 1-second candle appends tracking live prices within 0.25% tick step bounds
+- Upfront high-frequency window clamping (max 3,600 candles for `SECONDS`, 5,000 for `MINUTE`/`HOURLY`)
+- Startup validation and on-demand regeneration of missing dates
+- System limitations and window rules documented in [API_LIMITATIONS.md](API_LIMITATIONS.md)
 
 ### REST APIs
-- GET /api/market/history/{symbol}
+- GET /api/market/history/{symbol}?interval=1d&range=1Y&from=...&to=...
 - GET /api/market/candle/{symbol}
 - POST /api/admin/market/regenerate
 - GET /api/admin/market/status
