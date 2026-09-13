@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "tradex.market.history.interval=SECONDS",
         "tradex.market.history.seconds=10",
+        "tradex.market.history.generation-delay-ms=600000",
         "tradex.jwt.issuer=tradex-test",
         "tradex.jwt.secret=tradex-test-secret-that-is-long-enough-for-hmac-signing",
         "tradex.jwt.access-token-minutes=30",

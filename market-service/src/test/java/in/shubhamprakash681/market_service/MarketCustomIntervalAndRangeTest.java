@@ -93,5 +93,34 @@ class MarketCustomIntervalAndRangeTest {
         LocalDate oneYearStart = oneYearCandles.get(0).candleTime().toLocalDate();
         assertTrue(oneYearStart.isAfter(LocalDate.now().minusYears(2)), "1Y start date should be ~1 year ago");
     }
+
+    @Test
+    void testLargeIntervalRangeComboIsBoundedAndFast() {
+        long start = System.currentTimeMillis();
+
+        // 1. SECONDS with 5Y range: must be clamped to at most 3600 candles and complete very quickly (< 3s)
+        List<MarketDtos.CandleResponse> seconds5Y = marketHistoryService.history("RELIANCE", "1s", "5Y", null, null);
+        long duration = System.currentTimeMillis() - start;
+
+        assertNotNull(seconds5Y);
+        assertFalse(seconds5Y.isEmpty());
+        assertTrue(seconds5Y.size() <= 3601, "SECONDS with 5Y must be clamped to <= 3601 candles, found: " + seconds5Y.size());
+        assertTrue(duration < 5000, "SECONDS with 5Y must execute quickly, took " + duration + "ms");
+
+        // 2. MINUTE with 5Y range: must be clamped to at most 5000 candles and complete quickly
+        start = System.currentTimeMillis();
+        List<MarketDtos.CandleResponse> minute5Y = marketHistoryService.history("RELIANCE", "1m", "5Y", null, null);
+        duration = System.currentTimeMillis() - start;
+
+        assertNotNull(minute5Y);
+        assertFalse(minute5Y.isEmpty());
+        assertTrue(minute5Y.size() <= 5001, "MINUTE with 5Y must be clamped to <= 5001 candles, found: " + minute5Y.size());
+        assertTrue(duration < 5000, "MINUTE with 5Y must execute quickly, took " + duration + "ms");
+
+        // 3. SECONDS with 1D range: must be clamped to 1 hour (<= 3601)
+        List<MarketDtos.CandleResponse> seconds1D = marketHistoryService.history("RELIANCE", "1s", "1D", null, null);
+        assertNotNull(seconds1D);
+        assertTrue(seconds1D.size() <= 3601, "SECONDS with 1D must be clamped to <= 3601 candles, found: " + seconds1D.size());
+    }
 }
 

@@ -75,6 +75,25 @@ public class MarketHistoryService {
         startTime = targetInterval.normalizeStart(startTime);
         endTime = targetInterval.normalizeEnd(endTime);
 
+        long maxAllowedCandles = switch (targetInterval) {
+            case SECONDS -> 3600L;
+            case MINUTE, HOURLY, DAILY -> 5000L;
+            case WEEKLY, MONTHLY -> 10000L;
+        };
+
+        LocalDateTime earliestAllowed = switch (targetInterval) {
+            case SECONDS -> endTime.minusSeconds(maxAllowedCandles);
+            case MINUTE -> endTime.minusMinutes(maxAllowedCandles);
+            case HOURLY -> endTime.minusHours(maxAllowedCandles);
+            case DAILY -> endTime.minusDays(maxAllowedCandles);
+            case WEEKLY -> endTime.minusWeeks(maxAllowedCandles);
+            case MONTHLY -> endTime.minusMonths(maxAllowedCandles);
+        };
+
+        if (startTime.isBefore(earliestAllowed)) {
+            startTime = targetInterval.normalizeStart(earliestAllowed);
+        }
+
         if (startTime.isAfter(endTime)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "from must be before or equal to to");
         }
@@ -98,6 +117,9 @@ public class MarketHistoryService {
 
         if (needsSeeding) {
             LocalDateTime fullStart = properties.startTime(targetInterval, now);
+            if (fullStart.isBefore(earliestAllowed)) {
+                fullStart = targetInterval.normalizeStart(earliestAllowed);
+            }
             LocalDateTime seedStart = startTime.isBefore(fullStart) ? startTime : fullStart;
             historicalMarketDataSeeder.seedStockHistory(normalized, targetInterval, seedStart, endTime);
         }
@@ -117,15 +139,23 @@ public class MarketHistoryService {
 
     private LocalDateTime calculateStartTimeFromRange(String range, LocalDateTime now, MarketHistoryProperties.Interval interval) {
         return switch (range) {
-            case "1D" -> now.minusDays(1);
-            case "5D" -> now.minusDays(5);
-            case "1M" -> now.minusMonths(1);
-            case "3M" -> now.minusMonths(3);
-            case "6M" -> now.minusMonths(6);
-            case "YTD" -> LocalDate.of(now.getYear(), 1, 1).atStartOfDay();
-            case "1Y" -> now.minusYears(1);
-            case "5Y" -> now.minusYears(5);
-            case "ALL" -> now.minusYears(10);
+            case "1D" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) : now.minusDays(1);
+            case "5D" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                         interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusDays(5);
+            case "1M" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                         interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusMonths(1);
+            case "3M" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                         interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusMonths(3);
+            case "6M" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                         interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusMonths(6);
+            case "YTD" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                          interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : LocalDate.of(now.getYear(), 1, 1).atStartOfDay();
+            case "1Y" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                         interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusYears(1);
+            case "5Y" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                         interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusYears(5);
+            case "ALL" -> interval == MarketHistoryProperties.Interval.SECONDS ? now.minusHours(1) :
+                          interval == MarketHistoryProperties.Interval.MINUTE ? now.minusDays(3) : now.minusYears(10);
             default -> properties.startTime(interval, now);
         };
     }

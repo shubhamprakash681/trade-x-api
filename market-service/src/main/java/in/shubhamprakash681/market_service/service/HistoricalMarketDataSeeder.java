@@ -188,6 +188,24 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         if (targetInterval == null) {
             targetInterval = properties.getInterval();
         }
+
+        long maxAllowedSteps = switch (targetInterval) {
+            case SECONDS -> 3600L;
+            case MINUTE, HOURLY, DAILY -> 5000L;
+            case WEEKLY, MONTHLY -> 10000L;
+        };
+        LocalDateTime earliestAllowed = switch (targetInterval) {
+            case SECONDS -> endTime.minusSeconds(maxAllowedSteps);
+            case MINUTE -> endTime.minusMinutes(maxAllowedSteps);
+            case HOURLY -> endTime.minusHours(maxAllowedSteps);
+            case DAILY -> endTime.minusDays(maxAllowedSteps);
+            case WEEKLY -> endTime.minusWeeks(maxAllowedSteps);
+            case MONTHLY -> endTime.minusMonths(maxAllowedSteps);
+        };
+        if (startTime.isBefore(earliestAllowed)) {
+            startTime = targetInterval.normalizeStart(earliestAllowed);
+        }
+
         long expected = MarketHistoryProperties.expectedCandleCount(targetInterval, startTime, endTime);
         long existingCount = marketPriceHistoryRepository.countBySymbolAndIntervalAndCandleTimeBetween(stock.symbol(), interval, startTime, endTime);
 
@@ -258,7 +276,7 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         LocalDateTime lastCandleTime = null;
         long remainingSteps = expected;
 
-        while (!candleTime.isAfter(endTime)) {
+        while (!candleTime.isAfter(endTime) && remainingSteps >= 0) {
             GeneratedCandle candle = nextCandle(stock, candleTime.toLocalDate(),
                     ChronoUnit.DAYS.between(startTime.toLocalDate(), candleTime.toLocalDate()),
                     previousClose, targetPrice, remainingSteps, random, targetInterval);
