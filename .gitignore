@@ -34,3 +34,9 @@ build/
 
 # Env variables
 .env
+
+# Database backups
+backups/
+*.dump
+*.dump.sha256
+*.sql.gz

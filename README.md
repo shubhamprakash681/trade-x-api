@@ -357,6 +357,12 @@ tradex/
 └── README.md
 ```
 
+# Operational Documentation
+
+- **[CI/CD & Deployment Guide](DEPLOYMENT.md)** — Production deployment architecture, GitHub Actions workflow, and OCI configuration.
+- **[Database Management & Backup Guide](DATABASE_MANAGEMENT.md)** — Secure SSH tunneling for DBeaver/DataGrip, read-only role setup, and manual backup/restore workflows.
+- **[API Limitations & Quantitative Design](API_LIMITATIONS.md)** — Comprehensive documentation of stochastic models, candle generation bounds, and API constraints.
+
 ---
 
 # Design Goals

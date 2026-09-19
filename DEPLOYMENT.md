@@ -136,3 +136,10 @@ Every push to `main` automatically:
 5. Checks and issues/renews SSL certificates via Certbot and switches Nginx to HTTPS.
 6. Prunes dangling container images (`docker image prune -f`).
 7. Outputs container status table.
+
+---
+
+## 7. Production Database Operations & Backups
+
+For database inspection, modifications, read-only user creation, and automated manual backups via SSH tunneling, refer to the [Database Management Guide](DATABASE_MANAGEMENT.md).
+
