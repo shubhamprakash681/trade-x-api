@@ -37,6 +37,7 @@ tradex:
     cloud-name: ${CLOUDINARY_CLOUD_NAME}
     api-key: ${CLOUDINARY_API_KEY}
     api-secret: ${CLOUDINARY_API_SECRET}
+    users-folder: ${CLOUDINARY_USERS_FOLDER:tradex/users}
 
 springdoc:
   packages-to-scan: in.shubhamprakash681.auth_service.controller

@@ -26,6 +26,12 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(401, "Unauthorized", exception.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> maxUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.of(400, "Bad request", "File size must be less than 5 MB"));
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     ResponseEntity<ApiError> responseStatus(ResponseStatusException exception) {
         int status = exception.getStatusCode().value();

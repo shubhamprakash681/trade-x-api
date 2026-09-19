@@ -44,8 +44,9 @@ public class UserService {
     @Transactional
     public UserResponse uploadAvatar(JwtPrincipal parsedToken, MultipartFile file) {
         User user = findUser(parsedToken);
+        String username = getUsername(user);
 
-        String url = cloudinaryService.uploadAvatar(user.getId(), file);
+        String url = cloudinaryService.uploadAvatar(username, file);
         user.setAvatarUrl(url);
 
         return authService.toResponse(user);
@@ -56,11 +57,23 @@ public class UserService {
         User user = findUser(parsedToken);
 
         if (user.getAvatarUrl() != null) {
-            cloudinaryService.deleteAvatar(user.getId());
+            String username = getUsername(user);
+            cloudinaryService.deleteAvatar(username);
             user.setAvatarUrl(null);
         }
 
         return authService.toResponse(user);
+    }
+
+    public String getUsername(User user) {
+        String email = user.getEmail();
+        if (email != null && email.contains("@")) {
+            String name = email.substring(0, email.indexOf('@')).trim().toLowerCase();
+            if (!name.isEmpty()) {
+                return name;
+            }
+        }
+        return user.getId() != null ? "user_" + user.getId() : "user";
     }
 
     @Transactional

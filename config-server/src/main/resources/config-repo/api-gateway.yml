@@ -11,6 +11,8 @@ tradex:
     notification: lb://notification-service
 
 spring:
+  codec:
+    max-in-memory-size: 10MB
   cloud:
     gateway:
       httpclient:
