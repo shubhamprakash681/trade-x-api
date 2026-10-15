@@ -10,7 +10,8 @@ COPY . .
 
 ARG SERVICE
 
-RUN mvn -B -DskipTests package \
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -DskipTests package \
     -pl ${SERVICE} \
     -am
 

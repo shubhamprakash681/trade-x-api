@@ -37,11 +37,18 @@ x-service-environment: &service-environment
   TRADEX_WATCHLIST_CACHE_TTL_MINUTES: ${TRADEX_WATCHLIST_CACHE_TTL_MINUTES:-10}
   TRADEX_NOTIFICATION_LIMIT: ${TRADEX_NOTIFICATION_LIMIT:-100}
 
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 x-java-service: &java-service
   restart: unless-stopped
   pull_policy: build
   networks:
     - tradex
+  logging: *default-logging
   environment:
     <<: *service-environment
   healthcheck:
@@ -60,6 +67,7 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
     restart: unless-stopped
+    logging: *default-logging
     depends_on:
       api-gateway:
         condition: service_healthy
@@ -89,6 +97,7 @@ services:
     image: postgres:16.4-alpine
 
     restart: unless-stopped
+    logging: *default-logging
 
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-tradex}
@@ -122,6 +131,7 @@ services:
     image: redis:7.4.1-alpine
 
     restart: unless-stopped
+    logging: *default-logging
 
     command: ["redis-server", "--appendonly", "yes"]
 
@@ -147,6 +157,7 @@ services:
     image: rabbitmq:4.0.5-management-alpine
 
     restart: unless-stopped
+    logging: *default-logging
 
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
@@ -174,6 +185,7 @@ services:
     image: apache/kafka:3.9.1
 
     restart: unless-stopped
+    logging: *default-logging
 
     environment:
       KAFKA_NODE_ID: 1
@@ -500,6 +512,7 @@ services:
   certbot:
     image: certbot/certbot:latest
     container_name: tradex-certbot
+    logging: *default-logging
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
