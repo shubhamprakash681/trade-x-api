@@ -69,7 +69,7 @@ Characteristics
 
 - Generates approximately 10 years of daily OHLCV candles
 - Generates data for approximately 15 Indian stocks and ETFs
-- Uses deterministic random seeds so generated data remains consistent
+- Uses deterministic random seeds so generated data remains consistent across servers (see [Historical Data Determinism Guide](HISTORICAL_DATA_DETERMINISM.md))
 - Produces realistic long-term bullish and bearish trends
 - Simulates market crashes and recoveries
 - Generates realistic daily trading volumes

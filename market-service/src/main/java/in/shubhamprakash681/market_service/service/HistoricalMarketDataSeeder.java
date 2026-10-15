@@ -25,6 +25,19 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
+/**
+ * Component responsible for bootstrapping, validating, and generating historical OHLCV market candles.
+ * <p>
+ * <b>Multi-Server Determinism:</b>
+ * This seeder generates 100% identical, reproducible historical price curves across different servers
+ * (local machines, CI/CD runners, and production cloud VMs) by utilizing:
+ * <ol>
+ *   <li>Deterministic pseudo-random seeds derived from {@code stock.symbol().hashCode()}.</li>
+ *   <li>Fixed reference anchors from {@link SupportedStockCatalog}.</li>
+ *   <li>Guided Geometric Brownian Motion combined with real-world macroeconomic calendar milestones.</li>
+ * </ol>
+ * Refer to {@code HISTORICAL_DATA_DETERMINISM.md} in the root directory for full architectural details.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -271,6 +284,11 @@ public class HistoricalMarketDataSeeder implements SmartInitializingSingleton {
         };
         BigDecimal previousClose = targetPrice.multiply(startRatio).setScale(4, RoundingMode.HALF_UP);
 
+        // DETERMINISTIC PRNG SEED:
+        // By seeding Java's Random with stock.symbol().hashCode(), the generated sequence
+        // of pseudo-random numbers is 100% deterministic and reproducible across any server,
+        // operating system, or JVM instance. String.hashCode() is guaranteed by the Java Language
+        // Specification (JLS) to produce the exact same integer for a given string on any platform.
         Random random = new Random(stock.symbol().hashCode());
         LocalDateTime candleTime = startTime;
         LocalDateTime lastCandleTime = null;
